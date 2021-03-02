@@ -3,7 +3,11 @@
   <entry>
     <title>Hexo+github博客搭建</title>
     <url>/post/5e9e.html</url>
-    <content><![CDATA[<h1 id="1-node-js环境配置"><a href="#1-node-js环境配置" class="headerlink" title="1.node.js环境配置"></a>1.node.js环境配置</h1><h2 id="node-js下载"><a href="#node-js下载" class="headerlink" title="node.js下载"></a>node.js下载</h2><h2 id="node-js安装"><a href="#node-js安装" class="headerlink" title="node.js安装"></a>node.js安装</h2><h2 id="node-js检测"><a href="#node-js检测" class="headerlink" title="node.js检测"></a>node.js检测</h2><h1 id="2-git-安装"><a href="#2-git-安装" class="headerlink" title="2. git 安装"></a>2. git 安装</h1><h1 id="3-github设置"><a href="#3-github设置" class="headerlink" title="3.github设置"></a>3.github设置</h1><h2 id="账号注册"><a href="#账号注册" class="headerlink" title="账号注册"></a>账号注册</h2><h2 id="github仓库设置"><a href="#github仓库设置" class="headerlink" title="github仓库设置"></a>github仓库设置</h2><h1 id="4-hexo-命令"><a href="#4-hexo-命令" class="headerlink" title="4.hexo 命令"></a>4.hexo 命令</h1>]]></content>
+    <content><![CDATA[<h1 id="node-js环境配置"><a href="#node-js环境配置" class="headerlink" title="node.js环境配置"></a>node.js环境配置</h1><h2 id="node-js下载"><a href="#node-js下载" class="headerlink" title="node.js下载"></a>node.js下载</h2><h2 id="node-js安装"><a href="#node-js安装" class="headerlink" title="node.js安装"></a>node.js安装</h2><h2 id="node-js检测"><a href="#node-js检测" class="headerlink" title="node.js检测"></a>node.js检测</h2><h1 id="git-安装"><a href="#git-安装" class="headerlink" title="git 安装"></a>git 安装</h1><h1 id="github设置"><a href="#github设置" class="headerlink" title="github设置"></a>github设置</h1><h2 id="账号注册"><a href="#账号注册" class="headerlink" title="账号注册"></a>账号注册</h2><h2 id="github仓库设置"><a href="#github仓库设置" class="headerlink" title="github仓库设置"></a>github仓库设置</h2><h1 id="hexo-命令"><a href="#hexo-命令" class="headerlink" title="hexo 命令"></a>hexo 命令</h1><h2 id="hexo-init"><a href="#hexo-init" class="headerlink" title="hexo init"></a>hexo init</h2><p><code>hexo init </code> </p>
+<p>命令用于初始化本地文件夹为网站的根目录。</p>
+<p><code>hexo init [floder]</code></p>
+<p>[folder]可选参数，用以指定初始化目录的路径，若无指定则默认为当前目录。</p>
+<h2 id="hexo-new"><a href="#hexo-new" class="headerlink" title="hexo new"></a>hexo new</h2>]]></content>
       <categories>
         <category>博客搭建</category>
       </categories>
