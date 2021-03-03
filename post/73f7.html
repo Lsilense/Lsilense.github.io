@@ -20,15 +20,15 @@
     var CONFIG = {"hostname":"lsilense.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="向阳而生">
+  <meta name="description" content="1.词向量">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Pytorch入门02">
 <meta property="og:url" content="https://lsilense.github.io/post/73f7.html">
 <meta property="og:site_name" content="ZxSilence">
-<meta property="og:description" content="向阳而生">
+<meta property="og:description" content="1.词向量">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2021-03-03T08:28:44.000Z">
-<meta property="article:modified_time" content="2021-03-03T08:29:52.849Z">
+<meta property="article:modified_time" content="2021-03-03T12:59:26.778Z">
 <meta property="article:author" content="ZxSilence">
 <meta property="article:tag" content="python">
 <meta property="article:tag" content="pytorch">
@@ -219,7 +219,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2021-03-03 16:28:44 / 修改时间：16:29:52" itemprop="dateCreated datePublished" datetime="2021-03-03T16:28:44+08:00">2021-03-03</time>
+              <time title="创建时间：2021-03-03 16:28:44 / 修改时间：20:59:26" itemprop="dateCreated datePublished" datetime="2021-03-03T16:28:44+08:00">2021-03-03</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -242,7 +242,420 @@
     <div class="post-body" itemprop="articleBody">
 
       
+        <h1 id="1-词向量"><a href="#1-词向量" class="headerlink" title="1.词向量"></a>1.词向量</h1><span id="more"></span>
+
+<p>第二课学习目标</p>
+<ul>
+<li>学习词向量的概念</li>
+<li>用Skip-thought模型训练词向量</li>
+<li>学习使用PyTorch dataset和dataloader</li>
+<li>学习定义PyTorch模型</li>
+<li>学习torch.nn中常见的Module<ul>
+<li>Embedding</li>
+</ul>
+</li>
+<li>学习常见的PyTorch operations<ul>
+<li>bmm</li>
+<li>logsigmoid</li>
+</ul>
+</li>
+<li>保存和读取PyTorch模型</li>
+</ul>
+<p>第二课使用的训练数据可以从以下链接下载到。</p>
+<p>链接:<a target="_blank" rel="noopener" href="https://pan.baidu.com/s/1tFeK3mXuVXEy3EMarfeWvg">https://pan.baidu.com/s/1tFeK3mXuVXEy3EMarfeWvg</a> 密码:v2z5</p>
+<p>在这一份notebook中，我们会（尽可能）尝试复现论文<a target="_blank" rel="noopener" href="http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf">Distributed Representations of Words and Phrases and their Compositionality</a>中训练词向量的方法. 我们会实现Skip-gram模型，并且使用论文中noice contrastive sampling的目标函数。</p>
+<p>这篇论文有很多模型实现的细节，这些细节对于词向量的好坏至关重要。我们虽然无法完全复现论文中的实验结果，主要是由于计算资源等各种细节原因，但是我们还是可以大致展示如何训练词向量。</p>
+<p>以下是一些我们没有实现的细节</p>
+<ul>
+<li><p>subsampling：参考论文section 2.3</p>
+<pre class=" language-python"><code class="language-python"><span class="token keyword">import</span> torch
+<span class="token keyword">import</span> torch<span class="token punctuation">.</span>nn <span class="token keyword">as</span> nn  <span class="token comment" spellcheck="true">#神经网络工具箱torch.nn </span>
+<span class="token keyword">import</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>functional <span class="token keyword">as</span> F  <span class="token comment" spellcheck="true">#神经网络函数torch.nn.functional</span>
+<span class="token keyword">import</span> torch<span class="token punctuation">.</span>utils<span class="token punctuation">.</span>data <span class="token keyword">as</span> tud  <span class="token comment" spellcheck="true">#Pytorch读取训练集需要用到torch.utils.data类</span>
+</code></pre>
+<p><strong>两个模块的区别：</strong><a target="_blank" rel="noopener" href="https://blog.csdn.net/hawkcici160/article/details/80140059">torch.nn 和 torch.functional 的区别</a></p>
+</li>
+</ul>
+<pre class=" language-python"><code class="language-python"><span class="token keyword">from</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>parameter <span class="token keyword">import</span> Parameter  <span class="token comment" spellcheck="true">#参数更新和优化函数</span>
+
+<span class="token keyword">from</span> collections <span class="token keyword">import</span> Counter <span class="token comment" spellcheck="true">#Counter 计数器</span>
+<span class="token keyword">import</span> numpy <span class="token keyword">as</span> np 
+<span class="token keyword">import</span> random
+<span class="token keyword">import</span> math 
+
+<span class="token keyword">import</span> pandas <span class="token keyword">as</span> pd
+<span class="token keyword">import</span> scipy <span class="token comment" spellcheck="true">#SciPy是基于NumPy开发的高级模块，它提供了许多数学算法和函数的实现</span>
+<span class="token keyword">import</span> sklearn
+<span class="token keyword">from</span> sklearn<span class="token punctuation">.</span>metrics<span class="token punctuation">.</span>pairwise <span class="token keyword">import</span> cosine_similarity <span class="token comment" spellcheck="true">#余弦相似度函数</span>
+</code></pre>
+<pre class=" language-python"><code class="language-python">USE_CUDA <span class="token operator">=</span> torch<span class="token punctuation">.</span>cuda<span class="token punctuation">.</span>is_available<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#有GPU可以用</span>
+
+<span class="token comment" spellcheck="true"># 为了保证实验结果可以复现，我们经常会把各种random seed固定在某一个值</span>
+random<span class="token punctuation">.</span>seed<span class="token punctuation">(</span><span class="token number">53113</span><span class="token punctuation">)</span>
+np<span class="token punctuation">.</span>random<span class="token punctuation">.</span>seed<span class="token punctuation">(</span><span class="token number">53113</span><span class="token punctuation">)</span>
+torch<span class="token punctuation">.</span>manual_seed<span class="token punctuation">(</span><span class="token number">53113</span><span class="token punctuation">)</span>
+<span class="token keyword">if</span> USE_CUDA<span class="token punctuation">:</span>
+    torch<span class="token punctuation">.</span>cuda<span class="token punctuation">.</span>manual_seed<span class="token punctuation">(</span><span class="token number">53113</span><span class="token punctuation">)</span>
+    
+<span class="token comment" spellcheck="true"># 设定一些超参数   </span>
+K <span class="token operator">=</span> <span class="token number">100</span> <span class="token comment" spellcheck="true"># number of negative samples 负样本随机采样数量</span>
+C <span class="token operator">=</span> <span class="token number">3</span> <span class="token comment" spellcheck="true"># nearby words threshold 指定周围三个单词进行预测</span>
+NUM_EPOCHS <span class="token operator">=</span> <span class="token number">2</span> <span class="token comment" spellcheck="true"># The number of epochs of training 迭代轮数</span>
+MAX_VOCAB_SIZE <span class="token operator">=</span> <span class="token number">30000</span> <span class="token comment" spellcheck="true"># the vocabulary size 词汇表多大</span>
+BATCH_SIZE <span class="token operator">=</span> <span class="token number">128</span> <span class="token comment" spellcheck="true"># the batch size 每轮迭代1个batch的数量</span>
+LEARNING_RATE <span class="token operator">=</span> <span class="token number">0.2</span> <span class="token comment" spellcheck="true"># the initial learning rate #学习率</span>
+EMBEDDING_SIZE <span class="token operator">=</span> <span class="token number">100</span> <span class="token comment" spellcheck="true">#词向量维度</span>
+       
+    
+LOG_FILE <span class="token operator">=</span> <span class="token string">"word-embedding.log"</span>
+
+<span class="token comment" spellcheck="true"># tokenize函数，把一篇文本转化成一个个单词</span>
+<span class="token keyword">def</span> <span class="token function">word_tokenize</span><span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">:</span> 
+    <span class="token keyword">return</span> text<span class="token punctuation">.</span>split<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<ul>
+<li><p>从文本文件中读取所有的文字，通过这些文本创建一个vocabulary</p>
+</li>
+<li><p>由于单词数量可能太大，我们只选取最常见的MAX_VOCAB_SIZE个单词</p>
+</li>
+<li><p>我们添加一个UNK单词表示所有不常见的单词</p>
+</li>
+<li><p>我们需要记录单词到index的mapping，以及index到单词的mapping，单词的count，单词的(normalized) frequency，以及单词总数。</p>
+<pre class=" language-python"><code class="language-python"><span class="token keyword">with</span> open<span class="token punctuation">(</span><span class="token string">"text8.train.txt"</span><span class="token punctuation">,</span> <span class="token string">"r"</span><span class="token punctuation">)</span> <span class="token keyword">as</span> fin<span class="token punctuation">:</span> <span class="token comment" spellcheck="true">#读入文件</span>
+    text <span class="token operator">=</span> fin<span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    
+text <span class="token operator">=</span> <span class="token punctuation">[</span>w <span class="token keyword">for</span> w <span class="token keyword">in</span> word_tokenize<span class="token punctuation">(</span>text<span class="token punctuation">.</span>lower<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">]</span> 
+<span class="token comment" spellcheck="true">#分词，在这里类似于text.split()</span>
+
+vocab <span class="token operator">=</span> dict<span class="token punctuation">(</span>Counter<span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">.</span>most_common<span class="token punctuation">(</span>MAX_VOCAB_SIZE<span class="token number">-1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#字典格式，把（MAX_VOCAB_SIZE-1）个最频繁出现的单词取出来，-1是留给不常见的单词</span>
+
+vocab<span class="token punctuation">[</span><span class="token string">"&lt;unk>"</span><span class="token punctuation">]</span> <span class="token operator">=</span> len<span class="token punctuation">(</span>text<span class="token punctuation">)</span> <span class="token operator">-</span> np<span class="token punctuation">.</span>sum<span class="token punctuation">(</span>list<span class="token punctuation">(</span>vocab<span class="token punctuation">.</span>values<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#unk表示不常见单词数=总单词数-常见单词数</span>
+<span class="token comment" spellcheck="true">#这里计算的到vocab["&lt;unk>"]=29999</span>
+
+idx_to_word <span class="token operator">=</span> <span class="token punctuation">[</span>word <span class="token keyword">for</span> word <span class="token keyword">in</span> vocab<span class="token punctuation">.</span>keys<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span> 
+<span class="token comment" spellcheck="true">#取出字典的所有单词key</span>
+
+word_to_idx <span class="token operator">=</span> <span class="token operator">&amp;</span><span class="token comment" spellcheck="true">#123;word:i for i, word in enumerate(idx_to_word)&amp;#125;</span>
+<span class="token comment" spellcheck="true">#取出所有单词的单词和对应的索引，索引值与单词出现次数相反，最常见单词索引为0。</span>
+
+word_counts <span class="token operator">=</span> np<span class="token punctuation">.</span>array<span class="token punctuation">(</span><span class="token punctuation">[</span>count <span class="token keyword">for</span> count <span class="token keyword">in</span> vocab<span class="token punctuation">.</span>values<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span> dtype<span class="token operator">=</span>np<span class="token punctuation">.</span>float32<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#所有单词的频数values</span>
+
+word_freqs <span class="token operator">=</span> word_counts <span class="token operator">/</span> np<span class="token punctuation">.</span>sum<span class="token punctuation">(</span>word_counts<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#所有单词的频率</span>
+
+word_freqs <span class="token operator">=</span> word_freqs <span class="token operator">**</span> <span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">.</span><span class="token operator">/</span><span class="token number">4</span><span class="token punctuation">.</span><span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#论文里乘以3/4次方</span>
+
+word_freqs <span class="token operator">=</span> word_freqs <span class="token operator">/</span> np<span class="token punctuation">.</span>sum<span class="token punctuation">(</span>word_freqs<span class="token punctuation">)</span> <span class="token comment" spellcheck="true"># 用来做 negative sampling</span>
+<span class="token comment" spellcheck="true"># 重新计算所有单词的频率</span>
+
+VOCAB_SIZE <span class="token operator">=</span> len<span class="token punctuation">(</span>idx_to_word<span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#词汇表单词数30000=MAX_VOCAB_SIZE</span>
+VOCAB_SIZE
+</code></pre>
+<h1 id="2-实现Dataloader"><a href="#2-实现Dataloader" class="headerlink" title="2.实现Dataloader"></a>2.实现Dataloader</h1><p>一个dataloader需要以下内容：</p>
+<ul>
+<li>把所有text编码成数字，然后用subsampling预处理这些文字。</li>
+<li>保存vocabulary，单词count，normalized word frequency</li>
+<li>每个iteration sample一个中心词</li>
+<li>根据当前的中心词返回context单词</li>
+<li>根据中心词sample一些negative单词</li>
+<li>返回单词的counts</li>
+</ul>
+<p>这里有一个好的tutorial介绍如何使用<a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/beginner/data_loading_tutorial.html">PyTorch dataloader</a>. 为了使用dataloader，我们需要定义以下两个function:</p>
+<ul>
+<li><code>__len__</code> function需要返回整个数据集中有多少个item</li>
+<li><code>__get__</code> 根据给定的index返回一个item</li>
+</ul>
+<p>有了dataloader之后，我们可以轻松随机打乱整个数据集，拿到一个batch的数据等等。</p>
+<pre class=" language-python"><code class="language-python"><span class="token keyword">class</span> <span class="token class-name">WordEmbeddingDataset</span><span class="token punctuation">(</span>tud<span class="token punctuation">.</span>Dataset<span class="token punctuation">)</span><span class="token punctuation">:</span> <span class="token comment" spellcheck="true">#tud.Dataset父类</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> text<span class="token punctuation">,</span> word_to_idx<span class="token punctuation">,</span> idx_to_word<span class="token punctuation">,</span> word_freqs<span class="token punctuation">,</span> word_counts<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">''' text: a list of words, all text from the training dataset
+            word_to_idx: the dictionary from word to idx
+            idx_to_word: idx to word mapping
+            word_freq: the frequency of each word
+            word_counts: the word counts
+        '''</span>
+        super<span class="token punctuation">(</span>WordEmbeddingDataset<span class="token punctuation">,</span> self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#初始化模型</span>
+        self<span class="token punctuation">.</span>text_encoded <span class="token operator">=</span> <span class="token punctuation">[</span>word_to_idx<span class="token punctuation">.</span>get<span class="token punctuation">(</span>t<span class="token punctuation">,</span> VOCAB_SIZE<span class="token number">-1</span><span class="token punctuation">)</span> <span class="token keyword">for</span> t <span class="token keyword">in</span> text<span class="token punctuation">]</span>
+        <span class="token comment" spellcheck="true">#字典 get() 函数返回指定键的值（第一个参数），如果值不在字典中返回默认值（第二个参数）。</span>
+        <span class="token comment" spellcheck="true">#取出text里每个单词word_to_idx字典里对应的索引,不在字典里返回"&lt;unk>"的索引</span>
+        <span class="token comment" spellcheck="true">#"&lt;unk>"的索引=29999，get括号里第二个参数应该写word_to_idx["&lt;unk>"]，不应该写VOCAB_SIZE-1，虽然数值一样。</span>
         
+        self<span class="token punctuation">.</span>text_encoded <span class="token operator">=</span> torch<span class="token punctuation">.</span>Tensor<span class="token punctuation">(</span>self<span class="token punctuation">.</span>text_encoded<span class="token punctuation">)</span><span class="token punctuation">.</span>long<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#变成tensor类型，这里变成longtensor，也可以torch.LongTensor(self.text_encoded)</span>
+        
+        self<span class="token punctuation">.</span>word_to_idx <span class="token operator">=</span> word_to_idx <span class="token comment" spellcheck="true">#保存数据</span>
+        self<span class="token punctuation">.</span>idx_to_word <span class="token operator">=</span> idx_to_word  <span class="token comment" spellcheck="true">#保存数据</span>
+        self<span class="token punctuation">.</span>word_freqs <span class="token operator">=</span> torch<span class="token punctuation">.</span>Tensor<span class="token punctuation">(</span>word_freqs<span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#保存数据</span>
+        self<span class="token punctuation">.</span>word_counts <span class="token operator">=</span> torch<span class="token punctuation">.</span>Tensor<span class="token punctuation">(</span>word_counts<span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#保存数据</span>
+        
+    <span class="token keyword">def</span> <span class="token function">__len__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span> <span class="token comment" spellcheck="true">#数据集有多少个item </span>
+        <span class="token comment" spellcheck="true">#魔法函数__len__</span>
+        <span class="token triple-quoted-string string">''' 返回整个数据集（所有单词）的长度
+        '''</span>
+        <span class="token keyword">return</span> len<span class="token punctuation">(</span>self<span class="token punctuation">.</span>text_encoded<span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#所有单词的总数</span>
+        
+    <span class="token keyword">def</span> <span class="token function">__getitem__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> idx<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment" spellcheck="true">#魔法函数__getitem__，这个函数跟普通函数不一样</span>
+        <span class="token triple-quoted-string string">''' 这个function返回以下数据用于训练
+            - 中心词
+            - 这个单词附近的(positive)单词
+            - 随机采样的K个单词作为negative sample
+        '''</span>
+        center_word <span class="token operator">=</span> self<span class="token punctuation">.</span>text_encoded<span class="token punctuation">[</span>idx<span class="token punctuation">]</span> 
+        <span class="token comment" spellcheck="true">#print(center_word)</span>
+        <span class="token comment" spellcheck="true">#中心词索引</span>
+        <span class="token comment" spellcheck="true">#这里__getitem__函数是个迭代器，idx代表了所有的单词索引。</span>
+        
+        pos_indices <span class="token operator">=</span> list<span class="token punctuation">(</span>range<span class="token punctuation">(</span>idx<span class="token operator">-</span>C<span class="token punctuation">,</span> idx<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">+</span> list<span class="token punctuation">(</span>range<span class="token punctuation">(</span>idx<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">,</span> idx<span class="token operator">+</span>C<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#周围词索引的索引，比如idx=0时。pos_indices = [-3, -2, -1, 1, 2, 3] </span>
+        <span class="token comment" spellcheck="true">#老师讲这里的时候，我不是特别明白</span>
+        
+        pos_indices <span class="token operator">=</span> <span class="token punctuation">[</span>i<span class="token operator">%</span>len<span class="token punctuation">(</span>self<span class="token punctuation">.</span>text_encoded<span class="token punctuation">)</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> pos_indices<span class="token punctuation">]</span>
+        <span class="token comment" spellcheck="true">#range(idx+1, idx+C+1)超出词汇总数时，需要特别处理，取余数</span>
+        
+        pos_words <span class="token operator">=</span> self<span class="token punctuation">.</span>text_encoded<span class="token punctuation">[</span>pos_indices<span class="token punctuation">]</span>
+        <span class="token comment" spellcheck="true">#周围词索引，就是希望出现的正例单词</span>
+        <span class="token comment" spellcheck="true">#print(pos_words)</span>
+        
+        neg_words <span class="token operator">=</span> torch<span class="token punctuation">.</span>multinomial<span class="token punctuation">(</span>self<span class="token punctuation">.</span>word_freqs<span class="token punctuation">,</span> K <span class="token operator">*</span> pos_words<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token boolean">True</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#负例采样单词索引，torch.multinomial作用是对self.word_freqs做K * pos_words.shape[0]次取值，输出的是self.word_freqs对应的下标。</span>
+        <span class="token comment" spellcheck="true">#取样方式采用有放回的采样，并且self.word_freqs数值越大，取样概率越大。</span>
+        <span class="token comment" spellcheck="true">#每个正确的单词采样K个，pos_words.shape[0]是正确单词数量</span>
+        <span class="token comment" spellcheck="true">#print(neg_words)</span>
+        
+        <span class="token keyword">return</span> center_word<span class="token punctuation">,</span> pos_words<span class="token punctuation">,</span> neg_words 
+</code></pre>
+<p>创建dataset和dataloader</p>
+<pre class=" language-python"><code class="language-python">dataset <span class="token operator">=</span> WordEmbeddingDataset<span class="token punctuation">(</span>text<span class="token punctuation">,</span> word_to_idx<span class="token punctuation">,</span> idx_to_word<span class="token punctuation">,</span> word_freqs<span class="token punctuation">,</span> word_counts<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true"># list(dataset) 可以把尝试打印下center_word, pos_words, neg_words看看</span>
+
+dataloader <span class="token operator">=</span> tud<span class="token punctuation">.</span>DataLoader<span class="token punctuation">(</span>dataset<span class="token punctuation">,</span> batch_size<span class="token operator">=</span>BATCH_SIZE<span class="token punctuation">,</span> shuffle<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">,</span> num_workers<span class="token operator">=</span><span class="token number">4</span><span class="token punctuation">)</span>     
+</code></pre>
+<p>torch.utils.data.DataLoader理解：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_36653505/article/details/83351808">https://blog.csdn.net/qq_36653505/article/details/83351808</a></p>
+</li>
+</ul>
+<h1 id="3-定义PyTorch模型"><a href="#3-定义PyTorch模型" class="headerlink" title="3.定义PyTorch模型"></a>3.定义PyTorch模型</h1><pre class=" language-python"><code class="language-python"><span class="token keyword">class</span> <span class="token class-name">EmbeddingModel</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> vocab_size<span class="token punctuation">,</span> embed_size<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">''' 初始化输出和输出embedding
+        '''</span>
+        super<span class="token punctuation">(</span>EmbeddingModel<span class="token punctuation">,</span> self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>vocab_size <span class="token operator">=</span> vocab_size  <span class="token comment" spellcheck="true">#30000</span>
+        self<span class="token punctuation">.</span>embed_size <span class="token operator">=</span> embed_size  <span class="token comment" spellcheck="true">#100</span>
+        
+        initrange <span class="token operator">=</span> <span class="token number">0.5</span> <span class="token operator">/</span> self<span class="token punctuation">.</span>embed_size
+        self<span class="token punctuation">.</span>out_embed <span class="token operator">=</span> nn<span class="token punctuation">.</span>Embedding<span class="token punctuation">(</span>self<span class="token punctuation">.</span>vocab_size<span class="token punctuation">,</span> self<span class="token punctuation">.</span>embed_size<span class="token punctuation">,</span> sparse<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#模型输出nn.Embedding(30000, 100)</span>
+        self<span class="token punctuation">.</span>out_embed<span class="token punctuation">.</span>weight<span class="token punctuation">.</span>data<span class="token punctuation">.</span>uniform_<span class="token punctuation">(</span><span class="token operator">-</span>initrange<span class="token punctuation">,</span> initrange<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#权重初始化的一种方法</span>
+        
+        
+        self<span class="token punctuation">.</span>in_embed <span class="token operator">=</span> nn<span class="token punctuation">.</span>Embedding<span class="token punctuation">(</span>self<span class="token punctuation">.</span>vocab_size<span class="token punctuation">,</span> self<span class="token punctuation">.</span>embed_size<span class="token punctuation">,</span> sparse<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">)</span>
+         <span class="token comment" spellcheck="true">#模型输入nn.Embedding(30000, 100)</span>
+        self<span class="token punctuation">.</span>in_embed<span class="token punctuation">.</span>weight<span class="token punctuation">.</span>data<span class="token punctuation">.</span>uniform_<span class="token punctuation">(</span><span class="token operator">-</span>initrange<span class="token punctuation">,</span> initrange<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#权重初始化的一种方法</span>
+        
+        
+    <span class="token keyword">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> input_labels<span class="token punctuation">,</span> pos_labels<span class="token punctuation">,</span> neg_labels<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">'''
+        input_labels: 中心词, [batch_size]
+        pos_labels: 中心词周围 context window 出现过的单词 [batch_size * (window_size * 2)]
+        neg_labelss: 中心词周围没有出现过的单词，从 negative sampling 得到 [batch_size, (window_size * 2 * K)]
+        
+        return: loss, [batch_size]
+        '''</span>
+        
+        batch_size <span class="token operator">=</span> input_labels<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>  <span class="token comment" spellcheck="true">#input_labels是输入的标签，tud.DataLoader()返回的。相已经被分成batch了。</span>
+        
+        input_embedding <span class="token operator">=</span> self<span class="token punctuation">.</span>in_embed<span class="token punctuation">(</span>input_labels<span class="token punctuation">)</span> 
+        <span class="token comment" spellcheck="true"># B * embed_size</span>
+        <span class="token comment" spellcheck="true">#这里估计进行了运算：（128,30000）*（30000,100）= 128(B) * 100 (embed_size)</span>
+        
+        pos_embedding <span class="token operator">=</span> self<span class="token punctuation">.</span>out_embed<span class="token punctuation">(</span>pos_labels<span class="token punctuation">)</span> <span class="token comment" spellcheck="true"># B * (2*C) * embed_size</span>
+        <span class="token comment" spellcheck="true">#同上，增加了维度(2*C)，表示一个batch有B组周围词单词，一组周围词有(2*C)个单词，每个单词有embed_size个维度。</span>
+        
+        neg_embedding <span class="token operator">=</span> self<span class="token punctuation">.</span>out_embed<span class="token punctuation">(</span>neg_labels<span class="token punctuation">)</span> <span class="token comment" spellcheck="true"># B * (2*C * K) * embed_size</span>
+        <span class="token comment" spellcheck="true">#同上，增加了维度(2*C*K)</span>
+      
+    
+        <span class="token comment" spellcheck="true">#torch.bmm()为batch间的矩阵相乘（b,n.m)*(b,m,p)=(b,n,p)</span>
+        log_pos <span class="token operator">=</span> torch<span class="token punctuation">.</span>bmm<span class="token punctuation">(</span>pos_embedding<span class="token punctuation">,</span> input_embedding<span class="token punctuation">.</span>unsqueeze<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>squeeze<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true"># B * (2*C)</span>
+        log_neg <span class="token operator">=</span> torch<span class="token punctuation">.</span>bmm<span class="token punctuation">(</span>neg_embedding<span class="token punctuation">,</span> <span class="token operator">-</span>input_embedding<span class="token punctuation">.</span>unsqueeze<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>squeeze<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true"># B * (2*C*K)</span>
+        <span class="token comment" spellcheck="true">#unsqueeze(2)指定位置升维，.squeeze()压缩维度。</span>
+        
+        <span class="token comment" spellcheck="true">#下面loss计算就是论文里的公式</span>
+        log_pos <span class="token operator">=</span> F<span class="token punctuation">.</span>logsigmoid<span class="token punctuation">(</span>log_pos<span class="token punctuation">)</span><span class="token punctuation">.</span>sum<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+        log_neg <span class="token operator">=</span> F<span class="token punctuation">.</span>logsigmoid<span class="token punctuation">(</span>log_neg<span class="token punctuation">)</span><span class="token punctuation">.</span>sum<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true"># batch_size     </span>
+        loss <span class="token operator">=</span> log_pos <span class="token operator">+</span> log_neg
+        
+        <span class="token keyword">return</span> <span class="token operator">-</span>loss
+    
+    <span class="token keyword">def</span> <span class="token function">input_embeddings</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>   <span class="token comment" spellcheck="true">#取出self.in_embed数据参数</span>
+        <span class="token keyword">return</span> self<span class="token punctuation">.</span>in_embed<span class="token punctuation">.</span>weight<span class="token punctuation">.</span>data<span class="token punctuation">.</span>cpu<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>numpy<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        
+</code></pre>
+<p>定义一个模型以及把模型移动到GPU</p>
+<pre class=" language-python"><code class="language-python">model <span class="token operator">=</span> EmbeddingModel<span class="token punctuation">(</span>VOCAB_SIZE<span class="token punctuation">,</span> EMBEDDING_SIZE<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#得到model，有参数，有loss，可以优化了</span>
+
+<span class="token keyword">if</span> USE_CUDA<span class="token punctuation">:</span>
+    model <span class="token operator">=</span> model<span class="token punctuation">.</span>cuda<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<p>下面是评估模型的代码，以及训练模型的代码</p>
+<pre class=" language-python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">evaluate</span><span class="token punctuation">(</span>filename<span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span><span class="token punctuation">:</span> 
+    <span class="token keyword">if</span> filename<span class="token punctuation">.</span>endswith<span class="token punctuation">(</span><span class="token string">".csv"</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        data <span class="token operator">=</span> pd<span class="token punctuation">.</span>read_csv<span class="token punctuation">(</span>filename<span class="token punctuation">,</span> sep<span class="token operator">=</span><span class="token string">","</span><span class="token punctuation">)</span>
+    <span class="token keyword">else</span><span class="token punctuation">:</span>
+        data <span class="token operator">=</span> pd<span class="token punctuation">.</span>read_csv<span class="token punctuation">(</span>filename<span class="token punctuation">,</span> sep<span class="token operator">=</span><span class="token string">"\t"</span><span class="token punctuation">)</span>
+    human_similarity <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    model_similarity <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    <span class="token keyword">for</span> i <span class="token keyword">in</span> data<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">:</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">.</span>index<span class="token punctuation">:</span>
+        word1<span class="token punctuation">,</span> word2 <span class="token operator">=</span> data<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span>i<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> data<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span>i<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">]</span>
+        <span class="token keyword">if</span> word1 <span class="token operator">not</span> <span class="token keyword">in</span> word_to_idx <span class="token operator">or</span> word2 <span class="token operator">not</span> <span class="token keyword">in</span> word_to_idx<span class="token punctuation">:</span>
+            <span class="token keyword">continue</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            word1_idx<span class="token punctuation">,</span> word2_idx <span class="token operator">=</span> word_to_idx<span class="token punctuation">[</span>word1<span class="token punctuation">]</span><span class="token punctuation">,</span> word_to_idx<span class="token punctuation">[</span>word2<span class="token punctuation">]</span>
+            word1_embed<span class="token punctuation">,</span> word2_embed <span class="token operator">=</span> embedding_weights<span class="token punctuation">[</span><span class="token punctuation">[</span>word1_idx<span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">[</span><span class="token punctuation">[</span>word2_idx<span class="token punctuation">]</span><span class="token punctuation">]</span>
+            model_similarity<span class="token punctuation">.</span>append<span class="token punctuation">(</span>float<span class="token punctuation">(</span>sklearn<span class="token punctuation">.</span>metrics<span class="token punctuation">.</span>pairwise<span class="token punctuation">.</span>cosine_similarity<span class="token punctuation">(</span>word1_embed<span class="token punctuation">,</span> word2_embed<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            human_similarity<span class="token punctuation">.</span>append<span class="token punctuation">(</span>float<span class="token punctuation">(</span>data<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span>i<span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">return</span> scipy<span class="token punctuation">.</span>stats<span class="token punctuation">.</span>spearmanr<span class="token punctuation">(</span>human_similarity<span class="token punctuation">,</span> model_similarity<span class="token punctuation">)</span><span class="token comment" spellcheck="true"># , model_similarity</span>
+
+<span class="token keyword">def</span> <span class="token function">find_nearest</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    index <span class="token operator">=</span> word_to_idx<span class="token punctuation">[</span>word<span class="token punctuation">]</span>
+    embedding <span class="token operator">=</span> embedding_weights<span class="token punctuation">[</span>index<span class="token punctuation">]</span>
+    cos_dis <span class="token operator">=</span> np<span class="token punctuation">.</span>array<span class="token punctuation">(</span><span class="token punctuation">[</span>scipy<span class="token punctuation">.</span>spatial<span class="token punctuation">.</span>distance<span class="token punctuation">.</span>cosine<span class="token punctuation">(</span>e<span class="token punctuation">,</span> embedding<span class="token punctuation">)</span> <span class="token keyword">for</span> e <span class="token keyword">in</span> embedding_weights<span class="token punctuation">]</span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span> <span class="token punctuation">[</span>idx_to_word<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> cos_dis<span class="token punctuation">.</span>argsort<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token number">10</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+</code></pre>
+<p>训练模型：</p>
+<ul>
+<li><p>模型一般需要训练若干个epoch</p>
+</li>
+<li><p>每个epoch我们都把所有的数据分成若干个batch</p>
+</li>
+<li><p>把每个batch的输入和输出都包装成cuda tensor</p>
+</li>
+<li><p>forward pass，通过输入的句子预测每个单词的下一个单词</p>
+</li>
+<li><p>用模型的预测和正确的下一个单词计算cross entropy loss</p>
+</li>
+<li><p>清空模型当前gradient</p>
+</li>
+<li><p>backward pass</p>
+</li>
+<li><p>更新模型参数</p>
+</li>
+<li><p>每隔一定的iteration输出模型在当前iteration的loss，以及在验证数据集上做模型的评估</p>
+<pre class=" language-python"><code class="language-python"><span class="token keyword">for</span> i<span class="token punctuation">,</span> <span class="token punctuation">(</span>input_labels<span class="token punctuation">,</span> pos_labels<span class="token punctuation">,</span> neg_labels<span class="token punctuation">)</span> <span class="token keyword">in</span> enumerate<span class="token punctuation">(</span>dataloader<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>input_labels<span class="token punctuation">,</span> pos_labels<span class="token punctuation">,</span> neg_labels<span class="token punctuation">)</span>
+        <span class="token keyword">if</span> i<span class="token operator">></span><span class="token number">5</span><span class="token punctuation">:</span>
+            <span class="token keyword">break</span>
+</code></pre>
+<pre class=" language-python"><code class="language-python">optimizer <span class="token operator">=</span> torch<span class="token punctuation">.</span>optim<span class="token punctuation">.</span>SGD<span class="token punctuation">(</span>model<span class="token punctuation">.</span>parameters<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> lr<span class="token operator">=</span>LEARNING_RATE<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#随机梯度下降</span>
+
+<span class="token keyword">for</span> e <span class="token keyword">in</span> range<span class="token punctuation">(</span>NUM_EPOCHS<span class="token punctuation">)</span><span class="token punctuation">:</span> <span class="token comment" spellcheck="true">#开始迭代</span>
+    <span class="token keyword">for</span> i<span class="token punctuation">,</span> <span class="token punctuation">(</span>input_labels<span class="token punctuation">,</span> pos_labels<span class="token punctuation">,</span> neg_labels<span class="token punctuation">)</span> <span class="token keyword">in</span> enumerate<span class="token punctuation">(</span>dataloader<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment" spellcheck="true">#print(input_labels, pos_labels, neg_labels)</span>
+        
+        <span class="token comment" spellcheck="true"># TODO</span>
+        input_labels <span class="token operator">=</span> input_labels<span class="token punctuation">.</span>long<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#longtensor</span>
+        pos_labels <span class="token operator">=</span> pos_labels<span class="token punctuation">.</span>long<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        neg_labels <span class="token operator">=</span> neg_labels<span class="token punctuation">.</span>long<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">if</span> USE_CUDA<span class="token punctuation">:</span>
+            input_labels <span class="token operator">=</span> input_labels<span class="token punctuation">.</span>cuda<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            pos_labels <span class="token operator">=</span> pos_labels<span class="token punctuation">.</span>cuda<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            neg_labels <span class="token operator">=</span> neg_labels<span class="token punctuation">.</span>cuda<span class="token punctuation">(</span><span class="token punctuation">)</span>
+       
+        <span class="token comment" spellcheck="true">#下面第一节课都讲过的   </span>
+        optimizer<span class="token punctuation">.</span>zero_grad<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true">#梯度归零</span>
+        loss <span class="token operator">=</span> model<span class="token punctuation">(</span>input_labels<span class="token punctuation">,</span> pos_labels<span class="token punctuation">,</span> neg_labels<span class="token punctuation">)</span><span class="token punctuation">.</span>mean<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        
+        loss<span class="token punctuation">.</span>backward<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        optimizer<span class="token punctuation">.</span>step<span class="token punctuation">(</span><span class="token punctuation">)</span>
+       
+        <span class="token comment" spellcheck="true">#打印结果。</span>
+        <span class="token keyword">if</span> i <span class="token operator">%</span> <span class="token number">100</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">:</span>
+            <span class="token keyword">with</span> open<span class="token punctuation">(</span>LOG_FILE<span class="token punctuation">,</span> <span class="token string">"a"</span><span class="token punctuation">)</span> <span class="token keyword">as</span> fout<span class="token punctuation">:</span>
+                fout<span class="token punctuation">.</span>write<span class="token punctuation">(</span><span class="token string">"epoch: &amp;#123;&amp;#125;, iter: &amp;#123;&amp;#125;, loss: &amp;#123;&amp;#125;\n"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>e<span class="token punctuation">,</span> i<span class="token punctuation">,</span> loss<span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"epoch: &amp;#123;&amp;#125;, iter: &amp;#123;&amp;#125;, loss: &amp;#123;&amp;#125;"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>e<span class="token punctuation">,</span> i<span class="token punctuation">,</span> loss<span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            
+        
+        <span class="token keyword">if</span> i <span class="token operator">%</span> <span class="token number">2000</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">:</span>
+            embedding_weights <span class="token operator">=</span> model<span class="token punctuation">.</span>input_embeddings<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            sim_simlex <span class="token operator">=</span> evaluate<span class="token punctuation">(</span><span class="token string">"simlex-999.txt"</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span>
+            sim_men <span class="token operator">=</span> evaluate<span class="token punctuation">(</span><span class="token string">"men.txt"</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span>
+            sim_353 <span class="token operator">=</span> evaluate<span class="token punctuation">(</span><span class="token string">"wordsim353.csv"</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span>
+            <span class="token keyword">with</span> open<span class="token punctuation">(</span>LOG_FILE<span class="token punctuation">,</span> <span class="token string">"a"</span><span class="token punctuation">)</span> <span class="token keyword">as</span> fout<span class="token punctuation">:</span>
+                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"epoch: &amp;#123;&amp;#125;, iteration: &amp;#123;&amp;#125;, simlex-999: &amp;#123;&amp;#125;, men: &amp;#123;&amp;#125;, sim353: &amp;#123;&amp;#125;, nearest to monster: &amp;#123;&amp;#125;\n"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>
+                    e<span class="token punctuation">,</span> i<span class="token punctuation">,</span> sim_simlex<span class="token punctuation">,</span> sim_men<span class="token punctuation">,</span> sim_353<span class="token punctuation">,</span> find_nearest<span class="token punctuation">(</span><span class="token string">"monster"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                fout<span class="token punctuation">.</span>write<span class="token punctuation">(</span><span class="token string">"epoch: &amp;#123;&amp;#125;, iteration: &amp;#123;&amp;#125;, simlex-999: &amp;#123;&amp;#125;, men: &amp;#123;&amp;#125;, sim353: &amp;#123;&amp;#125;, nearest to monster: &amp;#123;&amp;#125;\n"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>
+                    e<span class="token punctuation">,</span> i<span class="token punctuation">,</span> sim_simlex<span class="token punctuation">,</span> sim_men<span class="token punctuation">,</span> sim_353<span class="token punctuation">,</span> find_nearest<span class="token punctuation">(</span><span class="token string">"monster"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                
+    embedding_weights <span class="token operator">=</span> model<span class="token punctuation">.</span>input_embeddings<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    np<span class="token punctuation">.</span>save<span class="token punctuation">(</span><span class="token string">"embedding-&amp;#123;&amp;#125;"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>EMBEDDING_SIZE<span class="token punctuation">)</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span>
+    torch<span class="token punctuation">.</span>save<span class="token punctuation">(</span>model<span class="token punctuation">.</span>state_dict<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"embedding-&amp;#123;&amp;#125;.th"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>EMBEDDING_SIZE<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="language-python">model<span class="token punctuation">.</span>load_state_dict<span class="token punctuation">(</span>torch<span class="token punctuation">.</span>load<span class="token punctuation">(</span><span class="token string">"embedding-&amp;#123;&amp;#125;.th"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>EMBEDDING_SIZE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<h1 id="4-在-MEN-和-Simplex-999-数据集上做评估"><a href="#4-在-MEN-和-Simplex-999-数据集上做评估" class="headerlink" title="4.在 MEN 和 Simplex-999 数据集上做评估"></a>4.在 MEN 和 Simplex-999 数据集上做评估</h1><pre class=" language-python"><code class="language-python">embedding_weights <span class="token operator">=</span> model<span class="token punctuation">.</span>input_embeddings<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"simlex-999"</span><span class="token punctuation">,</span> evaluate<span class="token punctuation">(</span><span class="token string">"simlex-999.txt"</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"men"</span><span class="token punctuation">,</span> evaluate<span class="token punctuation">(</span><span class="token string">"men.txt"</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"wordsim353"</span><span class="token punctuation">,</span> evaluate<span class="token punctuation">(</span><span class="token string">"wordsim353.csv"</span><span class="token punctuation">,</span> embedding_weights<span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+simlex<span class="token number">-999</span> SpearmanrResult<span class="token punctuation">(</span>correlation<span class="token operator">=</span><span class="token operator">-</span><span class="token number">0.03482408132848022</span><span class="token punctuation">,</span> pvalue<span class="token operator">=</span><span class="token number">0.2825882024218214</span><span class="token punctuation">)</span>
+men SpearmanrResult<span class="token punctuation">(</span>correlation<span class="token operator">=</span><span class="token operator">-</span><span class="token number">0.03505616876033543</span><span class="token punctuation">,</span> pvalue<span class="token operator">=</span><span class="token number">0.07491124200800446</span><span class="token punctuation">)</span>
+wordsim353 SpearmanrResult<span class="token punctuation">(</span>correlation<span class="token operator">=</span><span class="token number">0.05043808961363398</span><span class="token punctuation">,</span> pvalue<span class="token operator">=</span><span class="token number">0.3692450785973538</span><span class="token punctuation">)</span>
+</code></pre>
+<h2 id="4-1寻找nearest-neighbors"><a href="#4-1寻找nearest-neighbors" class="headerlink" title="4.1寻找nearest neighbors"></a>4.1寻找nearest neighbors</h2><pre class=" language-python"><code class="language-python"><span class="token operator">or</span> word <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token string">"good"</span><span class="token punctuation">,</span> <span class="token string">"fresh"</span><span class="token punctuation">,</span> <span class="token string">"monster"</span><span class="token punctuation">,</span> <span class="token string">"green"</span><span class="token punctuation">,</span> <span class="token string">"like"</span><span class="token punctuation">,</span> <span class="token string">"america"</span><span class="token punctuation">,</span> <span class="token string">"chicago"</span><span class="token punctuation">,</span> <span class="token string">"work"</span><span class="token punctuation">,</span> <span class="token string">"computer"</span><span class="token punctuation">,</span> <span class="token string">"language"</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>word<span class="token punctuation">,</span> find_nearest<span class="token punctuation">(</span>word<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="language-python">good <span class="token punctuation">[</span><span class="token string">'good'</span><span class="token punctuation">,</span> <span class="token string">'duties'</span><span class="token punctuation">,</span> <span class="token string">'tischendorf'</span><span class="token punctuation">,</span> <span class="token string">'whose'</span><span class="token punctuation">,</span> <span class="token string">'gluten'</span><span class="token punctuation">,</span> <span class="token string">'sidon'</span><span class="token punctuation">,</span> <span class="token string">'standpoint'</span><span class="token punctuation">,</span> <span class="token string">'energetically'</span><span class="token punctuation">,</span> <span class="token string">'granny'</span><span class="token punctuation">,</span> <span class="token string">'vicksburg'</span><span class="token punctuation">]</span>
+fresh <span class="token punctuation">[</span><span class="token string">'fresh'</span><span class="token punctuation">,</span> <span class="token string">'strong'</span><span class="token punctuation">,</span> <span class="token string">'detainee'</span><span class="token punctuation">,</span> <span class="token string">'toured'</span><span class="token punctuation">,</span> <span class="token string">'suicides'</span><span class="token punctuation">,</span> <span class="token string">'catholicism'</span><span class="token punctuation">,</span> <span class="token string">'abrupt'</span><span class="token punctuation">,</span> <span class="token string">'differentiates'</span><span class="token punctuation">,</span> <span class="token string">'gcc'</span><span class="token punctuation">,</span> <span class="token string">'hebrews'</span><span class="token punctuation">]</span>
+monster <span class="token punctuation">[</span><span class="token string">'monster'</span><span class="token punctuation">,</span> <span class="token string">'hydrology'</span><span class="token punctuation">,</span> <span class="token string">'fork'</span><span class="token punctuation">,</span> <span class="token string">'diocletian'</span><span class="token punctuation">,</span> <span class="token string">'grassland'</span><span class="token punctuation">,</span> <span class="token string">'dynamic'</span><span class="token punctuation">,</span> <span class="token string">'fatalities'</span><span class="token punctuation">,</span> <span class="token string">'assigns'</span><span class="token punctuation">,</span> <span class="token string">'olympian'</span><span class="token punctuation">,</span> <span class="token string">'iv'</span><span class="token punctuation">]</span>
+green <span class="token punctuation">[</span><span class="token string">'green'</span><span class="token punctuation">,</span> <span class="token string">'casually'</span><span class="token punctuation">,</span> <span class="token string">'firepower'</span><span class="token punctuation">,</span> <span class="token string">'counsel'</span><span class="token punctuation">,</span> <span class="token string">'reflexes'</span><span class="token punctuation">,</span> <span class="token string">'cyborgs'</span><span class="token punctuation">,</span> <span class="token string">'stunning'</span><span class="token punctuation">,</span> <span class="token string">'wrecked'</span><span class="token punctuation">,</span> <span class="token string">'inertial'</span><span class="token punctuation">,</span> <span class="token string">'omar'</span><span class="token punctuation">]</span>
+like <span class="token punctuation">[</span><span class="token string">'like'</span><span class="token punctuation">,</span> <span class="token string">'influx'</span><span class="token punctuation">,</span> <span class="token string">'float'</span><span class="token punctuation">,</span> <span class="token string">'territorial'</span><span class="token punctuation">,</span> <span class="token string">'composer'</span><span class="token punctuation">,</span> <span class="token string">'defendants'</span><span class="token punctuation">,</span> <span class="token string">'ralph'</span><span class="token punctuation">,</span> <span class="token string">'harpsichords'</span><span class="token punctuation">,</span> <span class="token string">'germanicus'</span><span class="token punctuation">,</span> <span class="token string">'chakra'</span><span class="token punctuation">]</span>
+america <span class="token punctuation">[</span><span class="token string">'america'</span><span class="token punctuation">,</span> <span class="token string">'textbook'</span><span class="token punctuation">,</span> <span class="token string">'lausanne'</span><span class="token punctuation">,</span> <span class="token string">'pneumonia'</span><span class="token punctuation">,</span> <span class="token string">'lofty'</span><span class="token punctuation">,</span> <span class="token string">'opium'</span><span class="token punctuation">,</span> <span class="token string">'eisa'</span><span class="token punctuation">,</span> <span class="token string">'sticks'</span><span class="token punctuation">,</span> <span class="token string">'workers'</span><span class="token punctuation">,</span> <span class="token string">'stresses'</span><span class="token punctuation">]</span>
+chicago <span class="token punctuation">[</span><span class="token string">'chicago'</span><span class="token punctuation">,</span> <span class="token string">'alphanumeric'</span><span class="token punctuation">,</span> <span class="token string">'excluding'</span><span class="token punctuation">,</span> <span class="token string">'joan'</span><span class="token punctuation">,</span> <span class="token string">'survived'</span><span class="token punctuation">,</span> <span class="token string">'qualify'</span><span class="token punctuation">,</span> <span class="token string">'folsom'</span><span class="token punctuation">,</span> <span class="token string">'opened'</span><span class="token punctuation">,</span> <span class="token string">'fielding'</span><span class="token punctuation">,</span> <span class="token string">'recognition'</span><span class="token punctuation">]</span>
+work <span class="token punctuation">[</span><span class="token string">'work'</span><span class="token punctuation">,</span> <span class="token string">'friesland'</span><span class="token punctuation">,</span> <span class="token string">'colleen'</span><span class="token punctuation">,</span> <span class="token string">'pronoun'</span><span class="token punctuation">,</span> <span class="token string">'anchor'</span><span class="token punctuation">,</span> <span class="token string">'substrates'</span><span class="token punctuation">,</span> <span class="token string">'liberians'</span><span class="token punctuation">,</span> <span class="token string">'gender'</span><span class="token punctuation">,</span> <span class="token string">'protests'</span><span class="token punctuation">,</span> <span class="token string">'caron'</span><span class="token punctuation">]</span>
+computer <span class="token punctuation">[</span><span class="token string">'computer'</span><span class="token punctuation">,</span> <span class="token string">'international'</span><span class="token punctuation">,</span> <span class="token string">'rd'</span><span class="token punctuation">,</span> <span class="token string">'crater'</span><span class="token punctuation">,</span> <span class="token string">'gluons'</span><span class="token punctuation">,</span> <span class="token string">'colts'</span><span class="token punctuation">,</span> <span class="token string">'immigration'</span><span class="token punctuation">,</span> <span class="token string">'beaked'</span><span class="token punctuation">,</span> <span class="token string">'arafat'</span><span class="token punctuation">,</span> <span class="token string">'householder'</span><span class="token punctuation">]</span>
+language <span class="token punctuation">[</span><span class="token string">'language'</span><span class="token punctuation">,</span> <span class="token string">'axle'</span><span class="token punctuation">,</span> <span class="token string">'equalled'</span><span class="token punctuation">,</span> <span class="token string">'normalized'</span><span class="token punctuation">,</span> <span class="token string">'xhtml'</span><span class="token punctuation">,</span> <span class="token string">'mythos'</span><span class="token punctuation">,</span> <span class="token string">'holders'</span><span class="token punctuation">,</span> <span class="token string">'athlete'</span><span class="token punctuation">,</span> <span class="token string">'lyle'</span><span class="token punctuation">,</span> <span class="token string">'unusually'</span><span class="token punctuation">]</span>
+</code></pre>
+<h2 id="4-2单词之间的关系"><a href="#4-2单词之间的关系" class="headerlink" title="4.2单词之间的关系"></a>4.2单词之间的关系</h2><pre class=" language-python"><code class="language-python">man_idx <span class="token operator">=</span> word_to_idx<span class="token punctuation">[</span><span class="token string">"man"</span><span class="token punctuation">]</span> 
+king_idx <span class="token operator">=</span> word_to_idx<span class="token punctuation">[</span><span class="token string">"king"</span><span class="token punctuation">]</span> 
+woman_idx <span class="token operator">=</span> word_to_idx<span class="token punctuation">[</span><span class="token string">"woman"</span><span class="token punctuation">]</span>
+embedding <span class="token operator">=</span> embedding_weights<span class="token punctuation">[</span>woman_idx<span class="token punctuation">]</span> <span class="token operator">-</span> embedding_weights<span class="token punctuation">[</span>man_idx<span class="token punctuation">]</span> <span class="token operator">+</span> embedding_weights<span class="token punctuation">[</span>king_idx<span class="token punctuation">]</span>
+cos_dis <span class="token operator">=</span> np<span class="token punctuation">.</span>array<span class="token punctuation">(</span><span class="token punctuation">[</span>scipy<span class="token punctuation">.</span>spatial<span class="token punctuation">.</span>distance<span class="token punctuation">.</span>cosine<span class="token punctuation">(</span>e<span class="token punctuation">,</span> embedding<span class="token punctuation">)</span> <span class="token keyword">for</span> e <span class="token keyword">in</span> embedding_weights<span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token keyword">for</span> i <span class="token keyword">in</span> cos_dis<span class="token punctuation">.</span>argsort<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token number">20</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>idx_to_word<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="language-python">woman
+king
+ovum
+apprentice
+abdomen
+producers
+carcinoma
+edible
+seq
+narcotic
+harmonicas
+brahman
+distress
+milan
+discerned
+dear
+singers
+phoenix
+archbishop
+sedition
+</code></pre>
+</li>
+</ul>
+
     </div>
 
     
@@ -323,6 +736,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#1-%E8%AF%8D%E5%90%91%E9%87%8F"><span class="nav-text">1.词向量</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2-%E5%AE%9E%E7%8E%B0Dataloader"><span class="nav-text">2.实现Dataloader</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#3-%E5%AE%9A%E4%B9%89PyTorch%E6%A8%A1%E5%9E%8B"><span class="nav-text">3.定义PyTorch模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4-%E5%9C%A8-MEN-%E5%92%8C-Simplex-999-%E6%95%B0%E6%8D%AE%E9%9B%86%E4%B8%8A%E5%81%9A%E8%AF%84%E4%BC%B0"><span class="nav-text">4.在 MEN 和 Simplex-999 数据集上做评估</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#4-1%E5%AF%BB%E6%89%BEnearest-neighbors"><span class="nav-text">4.1寻找nearest neighbors</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-2%E5%8D%95%E8%AF%8D%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-text">4.2单词之间的关系</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
