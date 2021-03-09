@@ -83,7 +83,7 @@
 <meta property="og:image" content="https://lsilense.github.io/post/80c4/54.png">
 <meta property="og:image" content="https://lsilense.github.io/post/80c4/55.png">
 <meta property="article:published_time" content="2021-03-08T07:58:51.000Z">
-<meta property="article:modified_time" content="2021-03-08T13:09:57.698Z">
+<meta property="article:modified_time" content="2021-03-09T09:15:28.911Z">
 <meta property="article:author" content="ZxSilence">
 <meta property="article:tag" content="python">
 <meta property="article:tag" content="pytorch">
@@ -274,10 +274,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2021-03-08 15:58:51 / 修改时间：21:09:57" itemprop="dateCreated datePublished" datetime="2021-03-08T15:58:51+08:00">2021-03-08</time>
+              <time title="创建时间：2021-03-08 15:58:51" itemprop="dateCreated datePublished" datetime="2021-03-08T15:58:51+08:00">2021-03-08</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-03-09 17:15:28" itemprop="dateModified" datetime="2021-03-09T17:15:28+08:00">2021-03-09</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -356,6 +362,182 @@
 <p><img src="/post/80c4/53.png" alt="53"></p>
 <p><img src="/post/80c4/54.png" alt="54"></p>
 <p><img src="/post/80c4/55.png" alt="55"></p>
+<pre class=" language-python"><code class="language-python"><span class="token comment" spellcheck="true">#引入torch</span>
+<span class="token keyword">import</span> torch
+<span class="token comment" spellcheck="true">#输入的大小是4</span>
+input_size <span class="token operator">=</span> <span class="token number">4</span>
+<span class="token comment" spellcheck="true">#隐层的大小是4</span>
+hidden_size <span class="token operator">=</span> <span class="token number">4</span>
+<span class="token comment" spellcheck="true">#层数是1</span>
+num_layers <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token comment" spellcheck="true">#batch的大小是1</span>
+batch_size <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token comment" spellcheck="true">#序列长度</span>
+seq_len <span class="token operator">=</span> <span class="token number">5</span>
+ 
+<span class="token comment" spellcheck="true">#字母列表，也叫做字典。</span>
+idx2char <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'e'</span><span class="token punctuation">,</span><span class="token string">'h'</span><span class="token punctuation">,</span><span class="token string">'l'</span><span class="token punctuation">,</span><span class="token string">'o'</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#x是输入的索引。hello</span>
+x_data <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#y是输出的索引。ohlol</span>
+y_data <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#独热向量查询。</span>
+one_hot_lookup <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                  <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                  <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                  <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#x独热向量是对于x在x_data中，将x做为索引，代入one_hot_lookup中得到该索引的独热向量</span>
+x_one_hot <span class="token operator">=</span> <span class="token punctuation">[</span>one_hot_lookup<span class="token punctuation">[</span>x<span class="token punctuation">]</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> x_data<span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#输入是将独热向量变成Tensor，序列的长度，batch的大小，输入的大小</span>
+inputs <span class="token operator">=</span> torch<span class="token punctuation">.</span>Tensor<span class="token punctuation">(</span>x_one_hot<span class="token punctuation">)</span><span class="token punctuation">.</span>view<span class="token punctuation">(</span>seq_len<span class="token punctuation">,</span>batch_size<span class="token punctuation">,</span>input_size<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#标签y是长Tensor，</span>
+labels <span class="token operator">=</span> torch<span class="token punctuation">.</span>LongTensor<span class="token punctuation">(</span>y_data<span class="token punctuation">)</span>
+ 
+<span class="token comment" spellcheck="true">#模型继承自Mudule</span>
+<span class="token keyword">class</span> <span class="token class-name">Model</span><span class="token punctuation">(</span>torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment" spellcheck="true">#初始化,输入，隐藏层，batch的大小，层数是1</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span>input_size<span class="token punctuation">,</span>hidden_size<span class="token punctuation">,</span>batch_size<span class="token punctuation">,</span>num_layers<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment" spellcheck="true">#父类初始化</span>
+        super<span class="token punctuation">(</span>Model<span class="token punctuation">,</span>self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#自身层数等于层数</span>
+        self<span class="token punctuation">.</span>num_layers <span class="token operator">=</span> num_layers
+        <span class="token comment" spellcheck="true">#自身batch的大小等于batch的大小</span>
+        self<span class="token punctuation">.</span>batch_size <span class="token operator">=</span> batch_size
+        <span class="token comment" spellcheck="true">#自身输入的大小等于输入的大小</span>
+        self<span class="token punctuation">.</span>input_size <span class="token operator">=</span> input_size
+        <span class="token comment" spellcheck="true">#自身隐藏层的大小等于隐藏层的大小</span>
+        self<span class="token punctuation">.</span>hidden_size <span class="token operator">=</span> hidden_size 
+        <span class="token comment" spellcheck="true">#rnn是RNN模块，输入等于自身输入,隐层等于自身隐层，层数等于层数。</span>
+        self<span class="token punctuation">.</span>rnn <span class="token operator">=</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>RNN<span class="token punctuation">(</span>input_size<span class="token operator">=</span>self<span class="token punctuation">.</span>input_size<span class="token punctuation">,</span>
+                                       hidden_size<span class="token operator">=</span>self<span class="token punctuation">.</span>hidden_size<span class="token punctuation">,</span>
+                                       num_layers<span class="token operator">=</span>num_layers<span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#自身前馈计算。输入</span>
+    <span class="token keyword">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span>input<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment" spellcheck="true">#初始h0，是归零。层数，batch的大小，隐层</span>
+        hidden <span class="token operator">=</span> torch<span class="token punctuation">.</span>zeros<span class="token punctuation">(</span>self<span class="token punctuation">.</span>num_layers<span class="token punctuation">,</span>
+                             self<span class="token punctuation">.</span>batch_size<span class="token punctuation">,</span>
+                             self<span class="token punctuation">.</span>hidden_size<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#out是所有的隐层的结果，第二个是最后一个隐层的结果，代入输入和隐层可求得结果</span>
+        out<span class="token punctuation">,</span> _ <span class="token operator">=</span>self<span class="token punctuation">.</span>rnn<span class="token punctuation">(</span>input<span class="token punctuation">,</span>hidden<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#返回隐层，改变形状，自动计算。变成2维的,第一个表示SeqLen*batchSize,第二个表示隐层的大小</span>
+        <span class="token keyword">return</span> out<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span>self<span class="token punctuation">.</span>hidden_size<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#实例化,输入，隐层，batch的大小，层数</span>
+net <span class="token operator">=</span> Model<span class="token punctuation">(</span>input_size<span class="token punctuation">,</span>hidden_size<span class="token punctuation">,</span>batch_size<span class="token punctuation">,</span>num_layers<span class="token punctuation">)</span>
+ 
+<span class="token comment" spellcheck="true">#损失的标准是交叉熵损失</span>
+criterion <span class="token operator">=</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>CrossEntropyLoss<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#优化器用Adam(随机梯度下降的优化器)优化模型中所有的参数，学习率为0.05</span>
+optimizer <span class="token operator">=</span> torch<span class="token punctuation">.</span>optim<span class="token punctuation">.</span>Adam<span class="token punctuation">(</span>net<span class="token punctuation">.</span>parameters<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>lr<span class="token operator">=</span><span class="token number">0.05</span><span class="token punctuation">)</span>
+ 
+<span class="token comment" spellcheck="true">#循环15次</span>
+<span class="token keyword">for</span> epoch <span class="token keyword">in</span> range<span class="token punctuation">(</span><span class="token number">15</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment" spellcheck="true">#梯度归零</span>
+    optimizer<span class="token punctuation">.</span>zero_grad<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#将输入代入模型得出输出</span>
+    outputs <span class="token operator">=</span> net<span class="token punctuation">(</span>inputs<span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#将输出和标签代入标准器得到损失</span>
+    loss <span class="token operator">=</span> criterion<span class="token punctuation">(</span>outputs<span class="token punctuation">,</span>labels<span class="token punctuation">)</span>   
+    <span class="token comment" spellcheck="true">#反向传播</span>
+    loss<span class="token punctuation">.</span>backward<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#优化更新</span>
+    optimizer<span class="token punctuation">.</span>step<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#沿着维度为1的方向找输出的最大值。第一项是输出的最大值，第二项是输出的最大值的标签。</span>
+    _<span class="token punctuation">,</span> idx <span class="token operator">=</span> outputs<span class="token punctuation">.</span>max<span class="token punctuation">(</span>dim<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#将张量的数据变成numpy数组模式</span>
+    idx <span class="token operator">=</span> idx<span class="token punctuation">.</span>data<span class="token punctuation">.</span>numpy<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#打印预测，空格后面跟join连接，对于x在标签中，将x代入到词典中求得字母。end是不换行加空格</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">'Predicted:'</span><span class="token punctuation">,</span><span class="token string">''</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token punctuation">[</span>idx2char<span class="token punctuation">[</span>x<span class="token punctuation">]</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> idx<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span>end<span class="token operator">=</span><span class="token string">''</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#循环次数，损失是小数点后三位。标量</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">',Epoch[%d/15] loss=%.3f'</span> <span class="token operator">%</span> <span class="token punctuation">(</span>epoch<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">,</span>loss<span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="language-python">
+<span class="token comment" spellcheck="true">#引入torch</span>
+<span class="token keyword">import</span> torch
+<span class="token comment" spellcheck="true">#有四种类别</span>
+num_class <span class="token operator">=</span> <span class="token number">4</span>
+<span class="token comment" spellcheck="true">#输入的大小是4</span>
+input_size <span class="token operator">=</span> <span class="token number">4</span>
+<span class="token comment" spellcheck="true">#隐层的大小是8</span>
+hidden_size <span class="token operator">=</span> <span class="token number">8</span>
+<span class="token comment" spellcheck="true">#嵌入层是10</span>
+embedding_size <span class="token operator">=</span> <span class="token number">10</span>
+<span class="token comment" spellcheck="true">#层数是2</span>
+num_layers <span class="token operator">=</span> <span class="token number">2</span>
+<span class="token comment" spellcheck="true">#batch的大小是1</span>
+batch_size <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token comment" spellcheck="true">#序列长度5</span>
+seq_len <span class="token operator">=</span> <span class="token number">5</span>
+ 
+<span class="token comment" spellcheck="true">#字母列表，也叫做字典。</span>
+idx2char <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'e'</span><span class="token punctuation">,</span><span class="token string">'h'</span><span class="token punctuation">,</span><span class="token string">'l'</span><span class="token punctuation">,</span><span class="token string">'o'</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#x是输入的索引。hello。。这是两个中括号。找了好久的毛病。卧槽了。</span>
+x_data <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#y是输出的索引。ohlol</span>
+y_data <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true">#输入x是长Tensor</span>
+inputs <span class="token operator">=</span> torch<span class="token punctuation">.</span>LongTensor<span class="token punctuation">(</span>x_data<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#标签y是长Tensor</span>
+labels <span class="token operator">=</span> torch<span class="token punctuation">.</span>LongTensor<span class="token punctuation">(</span>y_data<span class="token punctuation">)</span>
+ 
+<span class="token comment" spellcheck="true">#继承自module</span>
+<span class="token keyword">class</span> <span class="token class-name">Model</span><span class="token punctuation">(</span>torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment" spellcheck="true">#初始化</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment" spellcheck="true">#父类初始化</span>
+        super<span class="token punctuation">(</span>Model<span class="token punctuation">,</span>self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#嵌入层的输入的大小是高，embedding是宽。Embedding模型构成一个矩阵。</span>
+        self<span class="token punctuation">.</span>emb <span class="token operator">=</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>Embedding<span class="token punctuation">(</span>input_size<span class="token punctuation">,</span>embedding_size<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#rnn是输入，隐层，层数，batch_first为真，batch写在前面</span>
+        self<span class="token punctuation">.</span>rnn <span class="token operator">=</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>RNN<span class="token punctuation">(</span>input_size<span class="token operator">=</span>embedding_size<span class="token punctuation">,</span>
+                                hidden_size<span class="token operator">=</span>hidden_size<span class="token punctuation">,</span>
+                                num_layers<span class="token operator">=</span>num_layers<span class="token punctuation">,</span>
+                                batch_first<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#全连接层是将隐层数，用线性函数改成4种类型</span>
+        self<span class="token punctuation">.</span>fc <span class="token operator">=</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span>hidden_size<span class="token punctuation">,</span>num_class<span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#前馈计算    </span>
+    <span class="token keyword">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span>x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment" spellcheck="true">#初始h0，是归零。层数，x的第一维度，隐层</span>
+        hidden <span class="token operator">=</span> torch<span class="token punctuation">.</span>zeros<span class="token punctuation">(</span>num_layers<span class="token punctuation">,</span>x<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span>hidden_size<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#将x代入嵌入层，求得一个矩阵</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>emb<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#x是所有的隐层的结果，第二个是最后一个隐层的结果，代入x矩阵和隐层可求得结果</span>
+        x<span class="token punctuation">,</span> _ <span class="token operator">=</span> self<span class="token punctuation">.</span>rnn<span class="token punctuation">(</span>x<span class="token punctuation">,</span>hidden<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#将x所有的隐层用线性模型激活</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true">#返回x，改变形状，第一项自动得到，第二项是4种</span>
+        <span class="token keyword">return</span> x<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span>num_class<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#模型实例化</span>
+net <span class="token operator">=</span> Model<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    
+<span class="token comment" spellcheck="true">#损失的标准是交叉熵损失</span>
+criterion <span class="token operator">=</span> torch<span class="token punctuation">.</span>nn<span class="token punctuation">.</span>CrossEntropyLoss<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">#优化器用Adam(随机梯度下降的优化器)优化模型中所有的参数，学习率为0.05</span>
+optimizer <span class="token operator">=</span> torch<span class="token punctuation">.</span>optim<span class="token punctuation">.</span>Adam<span class="token punctuation">(</span>net<span class="token punctuation">.</span>parameters<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>lr<span class="token operator">=</span><span class="token number">0.05</span><span class="token punctuation">)</span>
+ 
+<span class="token comment" spellcheck="true">#循环15次</span>
+<span class="token keyword">for</span> epoch <span class="token keyword">in</span> range<span class="token punctuation">(</span><span class="token number">15</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment" spellcheck="true">#梯度归零</span>
+    optimizer<span class="token punctuation">.</span>zero_grad<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#将输入代入模型得出输出</span>
+    outputs <span class="token operator">=</span> net<span class="token punctuation">(</span>inputs<span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#将输出和标签代入标准器得到损失</span>
+    loss <span class="token operator">=</span> criterion<span class="token punctuation">(</span>outputs<span class="token punctuation">,</span>labels<span class="token punctuation">)</span>   
+    <span class="token comment" spellcheck="true">#反向传播</span>
+    loss<span class="token punctuation">.</span>backward<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#优化更新</span>
+    optimizer<span class="token punctuation">.</span>step<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#沿着维度为1的方向找输出的最大值。第一项是输出的最大值，第二项是输出的最大值的标签。</span>
+    _<span class="token punctuation">,</span> idx <span class="token operator">=</span> outputs<span class="token punctuation">.</span>max<span class="token punctuation">(</span>dim<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#将张量的数据变成numpy数组模式</span>
+    idx <span class="token operator">=</span> idx<span class="token punctuation">.</span>data<span class="token punctuation">.</span>numpy<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#打印预测，空格后面跟join连接，对于x在标签中，将x代入到词典中求得字母。end是不换行加空格</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">'Predicted:'</span><span class="token punctuation">,</span><span class="token string">''</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token punctuation">[</span>idx2char<span class="token punctuation">[</span>x<span class="token punctuation">]</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> idx<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span>end<span class="token operator">=</span><span class="token string">''</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">#循环次数，损失是小数点后三位。标量</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">',Epoch[%d/15] loss=%.3f'</span> <span class="token operator">%</span> <span class="token punctuation">(</span>epoch<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">,</span>loss<span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1Y7411d7Ys?p=1">转载自B站视频</a></li>
+</ul>
 
     </div>
 
