@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lsilense.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="论文地址：Identity Mappings in Deep Residual Networks">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Identity Mappings in Deep Residual Networks">
+<meta property="og:url" content="https://lsilense.github.io/post/dd35.html">
+<meta property="og:site_name" content="ZxSilence">
+<meta property="og:description" content="论文地址：Identity Mappings in Deep Residual Networks">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/01.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/02.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/03.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/04.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/05.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/06.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/07.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/08.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/09.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/10.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/11.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/12.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/13.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/14.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/15.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/16.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/17.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/18.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/19.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/20.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/21.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/22.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/23.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/24.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/25.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/26.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/27.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/28.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/29.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/30.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/31.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/32.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/33.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/34.png">
+<meta property="og:image" content="https://lsilense.github.io/post/dd35/35.png">
+<meta property="article:published_time" content="2021-03-09T10:41:40.000Z">
+<meta property="article:modified_time" content="2021-03-09T11:37:35.214Z">
+<meta property="article:author" content="ZxSilence">
+<meta property="article:tag" content="论文">
+<meta property="article:tag" content="神经网络">
+<meta property="article:tag" content="残差">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsilense.github.io/post/dd35/01.png">
+
+<link rel="canonical" href="https://lsilense.github.io/post/dd35.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Identity Mappings in Deep Residual Networks | ZxSilence</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ZxSilence</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lsilense.github.io/post/dd35.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="ZxSilence">
+      <meta itemprop="description" content="向阳而生">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ZxSilence">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Identity Mappings in Deep Residual Networks
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-03-09 18:41:40 / 修改时间：19:37:35" itemprop="dateCreated datePublished" datetime="2021-03-09T18:41:40+08:00">2021-03-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%BA%E6%96%87/" itemprop="url" rel="index"><span itemprop="name">论文</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>论文地址：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1603.05027">Identity Mappings in Deep Residual Networks</a></p>
+<span id="more"></span>
+
+<h1 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h1><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1512.03385">深度残差网络</a>作为一种极深的网络框架，在精度和收敛等方面都展现出了很好的特性。在本文中，我们分析了残差块(residual building blocks)背后的计算传播方式，表明了当跳跃连接(skip connections)以及附加激活项都使用恒等映射(identity mappings)时，前向和后向的信号能够直接的从一个block 传递到其他任意一个block。一系列的“消融”实验(ablation experiments)也验证了这些恒等映射的重要性。这促使我们提出了一个新的残差单元，它使得训练变得更简单，同时也提高了网络的泛化能力。我们报告了1001层ResNet在CIFAR-10(4.62% error) 和CIFAR-100上的结果，以及200层ResNet在ImageNet上的结果。代码可在 <a target="_blank" rel="noopener" href="https://github.com/KaimingHe/resnet-1k-layers%E4%B8%8A%E4%B8%8B%E8%BD%BD%E3%80%82">https://github.com/KaimingHe/resnet-1k-layers上下载。</a></p>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>深度残差网络(ResNets)由很多个“残差单元”组成。每一个单元(Fig.1 (a))可以表示为：</p>
+<p><img src="/post/dd35/01.png" alt="01"></p>
+<p><img src="/post/dd35/02.png" alt="02"></p>
+<p><img src="/post/dd35/03.png" alt="03"></p>
+<h1 id="Analysis-of-Deep-Residual-Networks"><a href="#Analysis-of-Deep-Residual-Networks" class="headerlink" title="Analysis of Deep Residual Networks"></a>Analysis of Deep Residual Networks</h1><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1512.03385">He2016</a>中的ResNets是通过将相同连接形状的blocks进行堆叠的模块化框架。本文中，我们将这些blocks称为“残差单元(Residual Units)”。<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1512.03385">He2016</a>中的原始残差单元执行以下计算(Eq.1，Eq.2)：</p>
+<p><img src="/post/dd35/04.png" alt="04"></p>
+<p><img src="/post/dd35/05.png" alt="05"></p>
+<p><img src="/post/dd35/06.png" alt="06"></p>
+<p><img src="/post/dd35/07.png" alt="07"></p>
+<p><img src="/post/dd35/08.png" alt="08"></p>
+<p><img src="/post/dd35/09.png" alt="09"></p>
+<h1 id="On-the-Importance-of-Identity-Skip-Connections"><a href="#On-the-Importance-of-Identity-Skip-Connections" class="headerlink" title="On the Importance of Identity Skip Connections"></a>On the Importance of Identity Skip Connections</h1><p><img src="/post/dd35/10.png" alt="10"></p>
+<p><img src="/post/dd35/11.png" alt="11"></p>
+<p><img src="/post/dd35/12.png" alt="12"></p>
+<p><img src="/post/dd35/13.png" alt="13"></p>
+<p><img src="/post/dd35/14.png" alt="14"></p>
+<h2 id="3-1-Experiments-on-Skip-Connections"><a href="#3-1-Experiments-on-Skip-Connections" class="headerlink" title="3.1 Experiments on Skip Connections"></a><strong>3.1 Experiments on Skip Connections</strong></h2><p>我们在CIFAR-10上使用<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1512.03385">He2016</a>中的110层ResNet进行实验。这个极深的ResNet-110含有54个2层残差单元(由3×3的卷积层组成)，这对优化造成了一定的挑战。我们的实现细节(见附录)与<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1512.03385">He2016</a>中的相同。为了避免随机变量的影响，本文中我们的结果为在CIFAR上每个框架运行<strong>5</strong>次得到的准确率的中位数。</p>
+<p>虽然在上述分析中，f为恒等映射，但是本节的实验中都是基于f=ReLU；我们在下一节中对恒等映射 f 进行分析。在测试集上我们的原始ResNet-110的错误率为<strong>6.61%</strong> 。与其他变形的比较 (Fig.2和 Table1)总结如下：</p>
+<p><img src="/post/dd35/15.png" alt="15"></p>
+<p><img src="/post/dd35/16.png" alt="16"></p>
+<p><strong>1×1 convolutional shortcut</strong>  接下来我们使用 1×1 的卷积捷径连接替代恒等连接在进行实验。这种方案在<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1512.03385">He2016</a>中使用在34层的ResNet(16个残差单元)上(即方案C)，并展现除了很好的结果，表明了1×1 卷积捷径连接是有效果的。但是我们发现当残差单元有很多时，这并不能起到特别好的效果。当使用1××1 的卷积捷径连接时，110 层的ResNet的结果很差(12.22%, Table1)。同样的训练误差也变得很高 (Fig.3(d))。当堆叠了如此多的残差单元时(ResNet-110 中有54个)，即便是最短的路径可能也会对信号的传播造成阻碍。当在ImageNet上使用1×1卷积捷径连接的ResNet-110时，出现了类似的结果。</p>
+<p><strong>Dropout shortcut</strong> 最后我们在恒等捷径连接上添加Dropout(比率为0.5) 来进行实验(Fig.2(f))。网络并没有收敛到一个很好的结果。Dropout在统计学上相当于给捷径连接强加了一个λ为0.5的缩放，这和0.5的constant scaling很类似，同样的阻碍了信号的传播。</p>
+<p><img src="/post/dd35/17.png" alt="17"></p>
+<h2 id="3-2-Discussions"><a href="#3-2-Discussions" class="headerlink" title="3.2 Discussions"></a><strong>3.2 Discussions</strong></h2><p>如Fig.2中灰色箭头所示，捷径连接是信息传递最直接的路径。 捷径连接中的操作 (缩放、门控、1×1 的卷积以及 dropout) 会阻碍信息的传递，以致于对优化造成困难。</p>
+<p>值得注意的是1×1的卷积捷径连接引入了更多的参数，本应该比恒等捷径连接具有更加强大的表达能力。事实上，shortcut-only gating 和1×1的卷积涵盖了恒等捷径连接的解空间(即，他们能够以恒等捷径连接的形式进行优化)。然而，它们的训练误差比恒等捷径连接的训练误差要高得多，这表明了这些模型退化问题的原因是优化问题，而不是表达能力的问题。</p>
+<h1 id="On-the-Usage-of-Activation-Functions"><a href="#On-the-Usage-of-Activation-Functions" class="headerlink" title="On the Usage of Activation Functions"></a>On the Usage of Activation Functions</h1><p><img src="/post/dd35/18.png" alt="18"></p>
+<p><img src="/post/dd35/19.png" alt="19"></p>
+<p><img src="/post/dd35/20.png" alt="20"></p>
+<h2 id="4-1-Experiments-on-Activation"><a href="#4-1-Experiments-on-Activation" class="headerlink" title="4.1 Experiments on Activation"></a><strong>4.1 Experiments on Activation</strong></h2><p><img src="/post/dd35/21.png" alt="21"></p>
+<p><img src="/post/dd35/22.png" alt="22"></p>
+<p><img src="/post/dd35/23.png" alt="23"></p>
+<p><img src="/post/dd35/24.png" alt="24"></p>
+<p><img src="/post/dd35/25.png" alt="25"></p>
+<p><img src="/post/dd35/26.png" alt="26"></p>
+<h2 id="4-2-Analysis"><a href="#4-2-Analysis" class="headerlink" title="4.2 Analysis"></a><strong>4.2 Analysis</strong></h2><p><img src="/post/dd35/27.png" alt="27"></p>
+<p><img src="/post/dd35/28.png" alt="28"></p>
+<h1 id="Results"><a href="#Results" class="headerlink" title="Results"></a>Results</h1><p><img src="/post/dd35/29.png" alt="29"></p>
+<p><img src="/post/dd35/30.png" alt="30"></p>
+<p><img src="/post/dd35/31.png" alt="31"></p>
+<p><img src="/post/dd35/32.png" alt="32"></p>
+<p><img src="/post/dd35/33.png" alt="33"></p>
+<p><img src="/post/dd35/34.png" alt="34"></p>
+<p><img src="/post/dd35/35.png" alt="35"></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/wspba/article/details/60750007">转载于</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%BA%E6%96%87/" rel="tag"># 论文</a>
+              <a href="/tags/%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/" rel="tag"># 神经网络</a>
+              <a href="/tags/%E6%AE%8B%E5%B7%AE/" rel="tag"># 残差</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/post/c7e1.html" rel="prev" title="PyTorch深度学习实践06_Logistic_Regression">
+      <i class="fa fa-chevron-left"></i> PyTorch深度学习实践06_Logistic_Regression
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%91%98%E8%A6%81"><span class="nav-text">摘要</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Analysis-of-Deep-Residual-Networks"><span class="nav-text">Analysis of Deep Residual Networks</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#On-the-Importance-of-Identity-Skip-Connections"><span class="nav-text">On the Importance of Identity Skip Connections</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#3-1-Experiments-on-Skip-Connections"><span class="nav-text">3.1 Experiments on Skip Connections</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-2-Discussions"><span class="nav-text">3.2 Discussions</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#On-the-Usage-of-Activation-Functions"><span class="nav-text">On the Usage of Activation Functions</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#4-1-Experiments-on-Activation"><span class="nav-text">4.1 Experiments on Activation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-2-Analysis"><span class="nav-text">4.2 Analysis</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Results"><span class="nav-text">Results</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="ZxSilence"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">ZxSilence</p>
+  <div class="site-description" itemprop="description">向阳而生</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ZxSilence</span>
+</div>
+
+<div>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<span id="busuanzi_container_site_pv" style='display:none'>
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    <span class="post-meta-divider">|</span>
+</span>
+<span id="busuanzi_container_site_uv" style='display:none'>
+    有<span id="busuanzi_value_site_uv"></span>人看过ZxSilence的博客啦
+</span>
+</div>
+
+
+
+<script>
+    var now = new Date(); 
+    function createtime() { 
+        var grt= new Date("02/24/2021 12:00:00");//此处修改你的建站时间或者网站上线时间 
+        now.setTime(now.getTime()+250); 
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days); 
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours); 
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum); 
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;} 
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum); 
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;} 
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 "; 
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒"; 
+    } 
+setInterval("createtime()",250);
+</script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
