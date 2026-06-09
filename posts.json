@@ -1,50 +1,58 @@
 [
   {
-    "id": "welcome-to-my-blog",
-    "title": "Welcome to My Blog",
+    "id": "gpt-4o-architecture-deep-dive",
+    "title": "GPT-4o 架构深度解析：多模态融合之路",
     "date": "2026-06-09",
-    "tags": ["blog", "intro"],
-    "excerpt": "Welcome to my new GitHub Pages blog! This is where I'll be sharing my thoughts, projects, and learnings.",
-    "content": "<h2>Hello, World!</h2><p>Welcome to my new blog, hosted on <strong>GitHub Pages</strong>. This blog is built with pure HTML, CSS, and JavaScript — no frameworks, no databases, just static files.</p><p>Here I'll be sharing:</p><ul><li>Technical tutorials and guides</li><li>Project updates and showcases</li><li>Thoughts on software development</li><li>Tips and tricks I've learned along the way</li></ul><p>Stay tuned for more content!</p>"
+    "tags": ["主流模型", "LLM", "多模态"],
+    "excerpt": "深入分析 GPT-4o 的模型架构设计，探讨多模态融合的关键技术及其对未来 AI 发展的影响。",
+    "content": "<h2>GPT-4o 的架构创新</h2><p>GPT-4o 代表了 OpenAI 在多模态 AI 领域的重大突破。本文将深入分析其核心架构设计。</p><h2>多模态融合策略</h2><p>GPT-4o 采用了一种新颖的跨模态注意力机制，能够在文本、图像和音频之间建立统一的表示空间。</p><h2>训练与推理优化</h2><p>为了支持多模态输入，GPT-4o 在训练和推理阶段进行了大量优化，包括高效的注意力计算和内存管理策略。</p>"
   },
   {
-    "id": "getting-started-with-github-pages",
-    "title": "Getting Started with GitHub Pages",
-    "date": "2026-06-08",
-    "tags": ["github", "tutorial", "web"],
-    "excerpt": "A comprehensive guide on how to set up and deploy your own GitHub Pages site with custom domain and HTTPS.",
-    "content": "<h2>What is GitHub Pages?</h2><p>GitHub Pages is a static site hosting service that takes HTML, CSS, and JavaScript files directly from a repository on GitHub and publishes them as a website.</p><h2>Setting Up Your Site</h2><p>To get started, create a repository named <code>username.github.io</code>. Any files you push to this repository will be served at <code>https://username.github.io</code>.</p><h2>Custom Domain</h2><p>You can also configure a custom domain for your GitHub Pages site. Simply create a CNAME record pointing to <code>username.github.io</code> and add your domain in the repository settings.</p>"
+    "id": "llama-3-fine-tuning-guide",
+    "title": "LLaMA-3 微调实战：从数据准备到部署",
+    "date": "2026-06-07",
+    "tags": ["模型训练", "Fine-tuning", "LLM"],
+    "excerpt": "手把手教你如何对 LLaMA-3 进行高效微调，涵盖 LoRA、QLoRA 等参数高效微调方法的完整实践。",
+    "content": "<h2>为什么选择 LLaMA-3</h2><p>LLaMA-3 凭借其卓越的性能和开放权重，成为微调任务的首选基础模型。</p><h2>数据准备</h2><p>高质量的微调数据集是成功的关键。本文分享数据清洗、标注格式转换和指令微调数据的构建方法。</p><h2>LoRA 微调实践</h2><p>使用 LoRA（Low-Rank Adaptation）方法对 LLaMA-3 进行参数高效微调，大幅降低显存需求。</p><pre><code>from peft import LoraConfig, get_peft_model\n\nlora_config = LoraConfig(\n    r=16,\n    lora_alpha=32,\n    target_modules=['q_proj', 'v_proj'],\n    lora_dropout=0.05,\n    bias='none'\n)\n\nmodel = get_peft_model(base_model, lora_config)</code></pre><h2>部署优化</h2><p>微调完成后，使用 vLLM 进行高效部署，实现低延迟推理。</p>"
   },
   {
-    "id": "html-css-tips-for-beginners",
-    "title": "HTML & CSS Tips for Beginners",
-    "date": "2026-06-06",
-    "tags": ["html", "css", "beginners"],
-    "excerpt": "Essential HTML and CSS tips that every web developer should know to build better, more maintainable websites.",
-    "content": "<h2>Use Semantic HTML</h2><p>Semantic HTML elements like <code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, and <code>&lt;footer&gt;</code> help screen readers and search engines understand your page structure.</p><h2>CSS Flexbox & Grid</h2><p>Modern CSS layout techniques like Flexbox and Grid make it much easier to create responsive layouts without relying on float-based hacks.</p><h2>Keep It Accessible</h2><p>Always add alt text to images, use sufficient color contrast, and ensure your site is navigable via keyboard.</p>"
+    "id": "vllm-inference-optimization",
+    "title": "vLLM 推理加速：PagedAttention 与 KV Cache 优化",
+    "date": "2026-06-05",
+    "tags": ["模型推理", "推理加速", "KV Cache"],
+    "excerpt": "深度解析 vLLM 的 PagedAttention 机制，以及如何通过 KV Cache 优化大幅提升 LLM 推理吞吐量。",
+    "content": "<h2>推理瓶颈分析</h2><p>大语言模型推理的主要瓶颈在于自回归生成过程中的 KV Cache 管理和显存碎片化。</p><h2>PagedAttention 原理</h2><p>vLLM 提出的 PagedAttention 机制借鉴了操作系统的虚拟内存管理思想，将 KV Cache 分页管理，大幅减少显存浪费。</p><h2>性能对比</h2><p>相比传统的 HuggingFace 实现，vLLM 在吞吐量上提升了 2-4 倍，同时保持相同的生成质量。</p><h2>部署实践</h2><pre><code>from vllm import LLM, SamplingParams\n\nllm = LLM(model='meta-llama/Llama-3-8B',\n          tensor_parallel_size=2,\n          gpu_memory_utilization=0.9)\n\nparams = SamplingParams(\n    temperature=0.7,\n    max_tokens=2048\n)</code></pre>"
   },
   {
-    "id": "understanding-javascript-async",
-    "title": "Understanding JavaScript Async/Await",
-    "date": "2026-06-03",
-    "tags": ["javascript", "async", "tutorial"],
-    "excerpt": "A deep dive into JavaScript's async/await pattern, promises, and how to handle asynchronous operations effectively.",
-    "content": "<h2>Callbacks to Promises</h2><p>JavaScript has evolved from callback-based asynchronous programming to promises, and now to async/await — the most readable approach.</p><h2>Async/Await Basics</h2><p>The <code>async</code> keyword declares an asynchronous function, while <code>await</code> pauses execution until a promise resolves.</p><pre><code>async function fetchData() {\\n  const response = await fetch('/api/data');\\n  const data = await response.json();\\n  return data;\\n}</code></pre><h2>Error Handling</h2><p>Use try/catch blocks with async/await for clean error handling:</p><pre><code>async function getData() {\\n  try {\\n    const data = await fetchData();\\n    console.log(data);\\n  } catch (error) {\\n    console.error('Failed:', error);\\n  }\\n}</code></pre>"
+    "id": "distributed-training-deepseek",
+    "title": "大规模分布式训练实践：以 DeepSeek 为例",
+    "date": "2026-06-02",
+    "tags": ["模型训练", "分布式训练", "Pre-training"],
+    "excerpt": "从数据并行到流水线并行，详解大规模分布式训练的核心技术和工程实践。",
+    "content": "<h2>分布式训练范式</h2><p>随着模型规模的增长，分布式训练从可选变为必需。本文对比分析数据并行、模型并行和流水线并行的适用场景。</p><h2>ZeRO 优化器</h2><p>DeepSpeed 的 ZeRO 优化器通过分片存储优化器状态、梯度和参数，使得训练超大模型成为可能。</p><h2>集群调度</h2><p>在大规模 GPU 集群上进行训练，需要考虑网络拓扑、故障恢复和负载均衡等工程问题。</p>"
   },
   {
-    "id": "my-dev-environment-setup",
-    "title": "My Development Environment Setup",
+    "id": "tensorrt-llm-deployment",
+    "title": "TensorRT-LLM 部署指南：生产级推理优化",
     "date": "2026-05-28",
-    "tags": ["devtools", "productivity", "workflow"],
-    "excerpt": "A tour of my current development environment including editor setup, terminal configuration, and essential tools.",
-    "content": "<h2>Editor: VS Code</h2><p>Visual Studio Code is my primary code editor. Here are my essential extensions:</p><ul><li>GitLens — supercharged Git capabilities</li><li>Prettier — automatic code formatting</li><li>ESLint — JavaScript linting</li><li>GitHub Copilot — AI pair programming</li></ul><h2>Terminal</h2><p>I use Windows Terminal with WSL2 (Ubuntu). My shell is zsh with Oh My Zsh and the Powerlevel10k theme.</p><h2>Git Workflow</h2><p>I follow a feature-branch workflow with conventional commits. This keeps the project history clean and makes collaboration easier.</p>"
+    "tags": ["模型推理", "部署", "推理加速"],
+    "excerpt": "使用 TensorRT-LLM 将大模型部署到生产环境，实现极致推理性能的完整技术方案。",
+    "content": "<h2>TensorRT-LLM 概览</h2><p>NVIDIA TensorRT-LLM 是一个专门为 LLM 推理优化的开源库，支持多种量化方案和注意力优化。</p><h2>模型编译与优化</h2><p>通过图优化、内核融合和量化感知训练，TensorRT-LLM 能够将推理延迟降低 2-5 倍。</p><h2>量化方案选择</h2><ul><li>FP16：无损精度，适合 A100/H100</li><li>INT8：轻微精度损失，吞吐量显著提升</li><li>INT4：激进量化，适合延迟敏感场景</li></ul>"
   },
   {
-    "id": "css-grid-vs-flexbox",
-    "title": "CSS Grid vs Flexbox: When to Use What",
+    "id": "claude-sonnet-model-analysis",
+    "title": "Claude 模型家族解析：能力、架构与应用场景",
+    "date": "2026-05-25",
+    "tags": ["主流模型", "LLM"],
+    "excerpt": "全面分析 Claude 系列模型的能力特点、技术架构和最佳应用场景，以及与其他主流模型的对比。",
+    "content": "<h2>Claude 技术特点</h2><p>Claude 系列模型以其强大的推理能力、长篇上下文处理和安全性著称。</p><h2>能力对比</h2><p>在不同基准测试中，Claude 4 在推理、编码和多轮对话方面表现出色，特别是在需要深度理解的长文本任务中。</p><h2>选择建议</h2><p>根据具体任务需求选择合适的模型：复杂推理首选 Opus，成本效益优先选 Sonnet，低延迟场景选 Haiku。</p>"
+  },
+  {
+    "id": "rlhf-training-technique",
+    "title": "RLHF 训练技术：从反馈收集到策略优化",
     "date": "2026-05-20",
-    "tags": ["css", "layout", "web"],
-    "excerpt": "Understanding the differences between CSS Grid and Flexbox and knowing when to use each layout method.",
-    "content": "<h2>Flexbox: One-Dimensional Layout</h2><p>Flexbox is designed for one-dimensional layouts — either a row OR a column. It's great for distributing space along a single axis.</p><h2>Grid: Two-Dimensional Layout</h2><p>CSS Grid is designed for two-dimensional layouts — rows AND columns simultaneously. It excels at creating complex page layouts.</p><h2>When to Use What</h2><p>Use <strong>Flexbox</strong> for: navigation bars, centering items, card rows, form elements.</p><p>Use <strong>Grid</strong> for: full page layouts, gallery grids, dashboard layouts, any layout needing both row and column control.</p>"
+    "tags": ["模型训练", "Fine-tuning"],
+    "excerpt": "深入探讨基于人类反馈的强化学习（RLHF）训练流程，包括奖励模型训练和 PPO 优化策略。",
+    "content": "<h2>RLHF 训练框架</h2><p>RLHF 是大语言模型对齐训练的核心技术，包含三个关键阶段：SFT、奖励建模和 PPO 训练。</p><h2>奖励模型设计</h2><p>奖励模型的质量直接决定了最终模型的对齐效果。本文分享奖励模型训练的最佳实践。</p><h2>PPO 优化</h2><p>近端策略优化（PPO）在 RLHF 中用于最大化奖励同时限制策略偏移。<p>"
   }
 ]
