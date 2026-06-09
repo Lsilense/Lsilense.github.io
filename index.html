@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A personal blog about software development, web technologies, and more.">
+  <meta name="author" content="Lsilense">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="My GitHub Blog">
+  <meta property="og:description" content="A personal blog about software development, web technologies, and more.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://Lsilense.github.io">
+
+  <title>Lsilense's Blog</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📝</text></svg>">
+</head>
+<body>
+
+  <!-- ==================== Header ==================== -->
+  <header class="site-header" role="banner">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="/" class="nav-brand">
+          <span class="brand-icon">B</span>
+          <span>My Blog</span>
+        </a>
+        <nav aria-label="Main navigation">
+          <ul class="nav-links" id="nav-links">
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="https://github.com/Lsilense" target="_blank" rel="noopener">GitHub</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="nav-right">
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/>
+          </svg>
+        </button>
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== Hero ==================== -->
+  <section class="hero" aria-label="Blog introduction">
+    <div class="hero-content">
+      <img
+        src="https://avatars.githubusercontent.com/u/0?v=4"
+        alt="Lsilense avatar"
+        class="hero-avatar"
+        onerror="this.style.display='none'"
+      >
+      <h1>Welcome to My Blog</h1>
+      <p class="hero-subtitle">Full-Stack Developer &amp; Tech Enthusiast</p>
+      <p class="hero-bio">
+        Writing about web development, programming, and technology.
+        Sharing knowledge and experiences from my journey as a developer.
+      </p>
+      <div class="hero-social">
+        <a href="https://github.com/Lsilense" target="_blank" rel="noopener">
+        <a href="#about">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 8a3 3 0 100-6 3 3 0 000 6zm2-3a2 2 0 11-4 0 2 2 0 014 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+          </svg>
+          About
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== Main ==================== -->
+  <div class="main-content">
+    <!-- Posts -->
+    <main class="posts-section" role="main">
+      <div class="section-header">
+        <h2>📝 Blog Posts</h2>
+        <span class="post-count" id="post-count">0 posts</span>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search posts..."
+            aria-label="Search blog posts"
+          >
+        </div>
+        <div class="tag-filters" id="tag-filters"></div>
+      </div>
+
+      <!-- Posts Container -->
+      <div id="posts-container">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p style="margin-top:8px">Loading posts...</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" role="complementary">
+      <!-- About Card -->
+      <div class="sidebar-card" id="about">
+        <div class="sidebar-card-header">About</div>
+        <div class="sidebar-card-body sidebar-about">
+          <p>
+            Hi, I'm a full-stack developer passionate about building great software.
+            This blog is my space to share what I learn along the way.
+          </p>
+          <p>
+            Topics include web development, programming languages, dev tools,
+            and best practices.
+          </p>
+          <div class="sidebar-stats">
+            <div class="stat-item">
+              <span class="stat-number" id="stat-posts">0</span>
+              <span class="stat-label">Posts</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="stat-tags">0</span>
+              <span class="stat-label">Tags</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tags Card -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Tags</div>
+        <div class="sidebar-card-body">
+          <div class="sidebar-tags" id="sidebar-tags"></div>
+        </div>
+      </div>
+
+      <!-- Recent Posts Card -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Recent Posts</div>
+        <div class="sidebar-card-body" id="recent-posts"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ==================== Footer ==================== -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-content">
+      <div class="footer-left">
+        <span class="footer-brand">My Blog</span>
+        <p>&copy; 2026 <a href="https://github.com/Lsilense" target="_blank" rel="noopener">Lsilense</a> — Built with <a href="https://pages.github.com" target="_blank" rel="noopener">GitHub Pages</a></p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/Lsilense" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="#">RSS Feed</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- ==================== Post Modal ==================== -->
+  <div class="post-modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="Post detail">
+    <article class="post-modal">
+      <div class="post-modal-header">
+        <div class="modal-title-area">
+          <h2 id="modal-title"></h2>
+          <div class="modal-meta">
+            <span id="modal-date"></span>
+            <span class="modal-tags" id="modal-tags"></span>
+          </div>
+        </div>
+        <button class="modal-close" id="modal-close" aria-label="Close modal">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="post-modal-body" id="modal-body"></div>
+      <div class="post-modal-footer">
+        <span>Share this post:</span>
+        <div class="share-links">
+          <a href="#" class="share-link">📋 Copy Link</a>
+          <a href="https://github.com/Lsilense" class="share-link" target="_blank" rel="noopener">🐙 View on GitHub</a>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- ==================== Scripts ==================== -->
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "welcome-to-my-blog",
+    "title": "Welcome to My Blog",
+    "date": "2026-06-09",
+    "tags": ["blog", "intro"],
+    "excerpt": "Welcome to my new GitHub Pages blog! This is where I'll be sharing my thoughts, projects, and learnings.",
+    "content": "<h2>Hello, World!</h2><p>Welcome to my new blog, hosted on <strong>GitHub Pages</strong>. This blog is built with pure HTML, CSS, and JavaScript — no frameworks, no databases, just static files.</p><p>Here I'll be sharing:</p><ul><li>Technical tutorials and guides</li><li>Project updates and showcases</li><li>Thoughts on software development</li><li>Tips and tricks I've learned along the way</li></ul><p>Stay tuned for more content!</p>"
+  },
+  {
+    "id": "getting-started-with-github-pages",
+    "title": "Getting Started with GitHub Pages",
+    "date": "2026-06-08",
+    "tags": ["github", "tutorial", "web"],
+    "excerpt": "A comprehensive guide on how to set up and deploy your own GitHub Pages site with custom domain and HTTPS.",
+    "content": "<h2>What is GitHub Pages?</h2><p>GitHub Pages is a static site hosting service that takes HTML, CSS, and JavaScript files directly from a repository on GitHub and publishes them as a website.</p><h2>Setting Up Your Site</h2><p>To get started, create a repository named <code>username.github.io</code>. Any files you push to this repository will be served at <code>https://username.github.io</code>.</p><h2>Custom Domain</h2><p>You can also configure a custom domain for your GitHub Pages site. Simply create a CNAME record pointing to <code>username.github.io</code> and add your domain in the repository settings.</p>"
+  },
+  {
+    "id": "html-css-tips-for-beginners",
+    "title": "HTML & CSS Tips for Beginners",
+    "date": "2026-06-06",
+    "tags": ["html", "css", "beginners"],
+    "excerpt": "Essential HTML and CSS tips that every web developer should know to build better, more maintainable websites.",
+    "content": "<h2>Use Semantic HTML</h2><p>Semantic HTML elements like <code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, and <code>&lt;footer&gt;</code> help screen readers and search engines understand your page structure.</p><h2>CSS Flexbox & Grid</h2><p>Modern CSS layout techniques like Flexbox and Grid make it much easier to create responsive layouts without relying on float-based hacks.</p><h2>Keep It Accessible</h2><p>Always add alt text to images, use sufficient color contrast, and ensure your site is navigable via keyboard.</p>"
+  },
+  {
+    "id": "understanding-javascript-async",
+    "title": "Understanding JavaScript Async/Await",
+    "date": "2026-06-03",
+    "tags": ["javascript", "async", "tutorial"],
+    "excerpt": "A deep dive into JavaScript's async/await pattern, promises, and how to handle asynchronous operations effectively.",
+    "content": "<h2>Callbacks to Promises</h2><p>JavaScript has evolved from callback-based asynchronous programming to promises, and now to async/await — the most readable approach.</p><h2>Async/Await Basics</h2><p>The <code>async</code> keyword declares an asynchronous function, while <code>await</code> pauses execution until a promise resolves.</p><pre><code>async function fetchData() {\\n  const response = await fetch('/api/data');\\n  const data = await response.json();\\n  return data;\\n}</code></pre><h2>Error Handling</h2><p>Use try/catch blocks with async/await for clean error handling:</p><pre><code>async function getData() {\\n  try {\\n    const data = await fetchData();\\n    console.log(data);\\n  } catch (error) {\\n    console.error('Failed:', error);\\n  }\\n}</code></pre>"
+  },
+  {
+    "id": "my-dev-environment-setup",
+    "title": "My Development Environment Setup",
+    "date": "2026-05-28",
+    "tags": ["devtools", "productivity", "workflow"],
+    "excerpt": "A tour of my current development environment including editor setup, terminal configuration, and essential tools.",
+    "content": "<h2>Editor: VS Code</h2><p>Visual Studio Code is my primary code editor. Here are my essential extensions:</p><ul><li>GitLens — supercharged Git capabilities</li><li>Prettier — automatic code formatting</li><li>ESLint — JavaScript linting</li><li>GitHub Copilot — AI pair programming</li></ul><h2>Terminal</h2><p>I use Windows Terminal with WSL2 (Ubuntu). My shell is zsh with Oh My Zsh and the Powerlevel10k theme.</p><h2>Git Workflow</h2><p>I follow a feature-branch workflow with conventional commits. This keeps the project history clean and makes collaboration easier.</p>"
+  },
+  {
+    "id": "css-grid-vs-flexbox",
+    "title": "CSS Grid vs Flexbox: When to Use What",
+    "date": "2026-05-20",
+    "tags": ["css", "layout", "web"],
+    "excerpt": "Understanding the differences between CSS Grid and Flexbox and knowing when to use each layout method.",
+    "content": "<h2>Flexbox: One-Dimensional Layout</h2><p>Flexbox is designed for one-dimensional layouts — either a row OR a column. It's great for distributing space along a single axis.</p><h2>Grid: Two-Dimensional Layout</h2><p>CSS Grid is designed for two-dimensional layouts — rows AND columns simultaneously. It excels at creating complex page layouts.</p><h2>When to Use What</h2><p>Use <strong>Flexbox</strong> for: navigation bars, centering items, card rows, form elements.</p><p>Use <strong>Grid</strong> for: full page layouts, gallery grids, dashboard layouts, any layout needing both row and column control.</p>"
+  }
+]
