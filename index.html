@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="A personal blog about software development, web technologies, and more.">
+  <meta name="description" content="Lsilense Blog - 聚焦 AI 主流模型、模型训练与模型推理的个人技术博客">
   <meta name="author" content="Lsilense">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="My GitHub Blog">
-  <meta property="og:description" content="A personal blog about software development, web technologies, and more.">
+  <meta property="og:title" content="Lsilense's Blog | AI & ML">
+  <meta property="og:description" content="聚焦 AI 主流模型、模型训练与模型推理的个人技术博客">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://Lsilense.github.io">
 
-  <title>Lsilense's Blog</title>
+  <title>Lsilense's Blog | AI & ML</title>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📝</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧠</text></svg>">
 </head>
 <body>
 
@@ -23,24 +23,27 @@
     <div class="nav-container">
       <div class="nav-left">
         <a href="/" class="nav-brand">
-          <span class="brand-icon">B</span>
-          <span>My Blog</span>
+          <span class="brand-icon">L</span>
+          <span>Lsilense</span>
         </a>
         <nav aria-label="Main navigation">
           <ul class="nav-links" id="nav-links">
-            <li><a href="/" class="active">Home</a></li>
-            <li><a href="#about">About</a></li>
+            <li><a href="/" class="active">首页</a></li>
+            <li><a href="#models">主流模型</a></li>
+            <li><a href="#training">模型训练</a></li>
+            <li><a href="#inference">模型推理</a></li>
+            <li><a href="#about">关于</a></li>
             <li><a href="https://github.com/Lsilense" target="_blank" rel="noopener">GitHub</a></li>
           </ul>
         </nav>
       </div>
       <div class="nav-right">
-        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+        <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/>
           </svg>
         </button>
-        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="切换菜单">
           <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
             <path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/>
           </svg>
@@ -50,39 +53,173 @@
   </header>
 
   <!-- ==================== Hero ==================== -->
-  <section class="hero" aria-label="Blog introduction">
+  <section class="hero" aria-label="个人简介">
     <div class="hero-content">
-      <img
-        src="https://avatars.githubusercontent.com/u/0?v=4"
-        alt="Lsilense avatar"
-        class="hero-avatar"
-        onerror="this.style.display='none'"
-      >
-      <h1>Welcome to My Blog</h1>
-      <p class="hero-subtitle">Full-Stack Developer &amp; Tech Enthusiast</p>
-      <p class="hero-bio">
-        Writing about web development, programming, and technology.
-        Sharing knowledge and experiences from my journey as a developer.
-      </p>
-      <div class="hero-social">
-        <a href="https://github.com/Lsilense" target="_blank" rel="noopener">
-        <a href="#about">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 8a3 3 0 100-6 3 3 0 000 6zm2-3a2 2 0 11-4 0 2 2 0 014 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-          </svg>
-          About
-        </a>
+      <div class="hero-text">
+        <div class="hero-badge">AI / ML Engineer</div>
+        <h1>Hi, I'm <span class="gradient-text">Lsilense</span></h1>
+        <p class="hero-subtitle">探索主流模型 · 专注模型训练 · 优化模型推理</p>
+        <p class="hero-bio">
+          一名 AI/ML 工程师，热衷于深度学习与大规模模型训练。
+          记录技术探索之路，分享在模型训练、推理优化和主流模型应用中的实践经验。
+        </p>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-number" id="hero-stat-posts">0</span>
+            <span class="hero-stat-label">文章</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-number" id="hero-stat-models">3</span>
+            <span class="hero-stat-label">研究方向</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-number" id="hero-stat-tags">0</span>
+            <span class="hero-stat-label">标签</span>
+          </div>
+        </div>
+        <div class="hero-social">
+          <a href="https://github.com/Lsilense" target="_blank" rel="noopener" class="social-btn">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub
+          </a>
+          <a href="#about" class="social-btn">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm2-3a2 2 0 11-4 0 2 2 0 014 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/></svg>
+            关于我
+          </a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="code-block">
+          <div class="code-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <pre><code><span class="code-comment"># model_config.py</span>
+<span class="code-key">model</span> = <span class="code-func">load_model</span>(
+    <span class="code-arg">name</span>=<span class="code-str">"Lsilense/awesome-model"</span>,
+    <span class="code-arg">precision</span>=<span class="code-str">"bf16"</span>,
+    <span class="code-arg">device</span>=<span class="code-str">"cuda"</span>
+)
+<span class="code-key">output</span> = model.<span class="code-func">generate</span>(
+    <span class="code-arg">input_ids</span>=input_ids,
+    <span class="code-arg">max_length</span>=<span class="code-num">2048</span>
+)</code></pre>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ==================== Main ==================== -->
+  <!-- ==================== Features: 研究领域 ==================== -->
+  <section class="features-section" id="models">
+    <div class="section-label">Research Areas</div>
+    <h2 class="section-title">研究方向</h2>
+    <p class="section-desc">聚焦 AI 前沿，持续探索模型能力边界</p>
+    <div class="features-grid">
+      <div class="feature-card" id="models-card" onclick="filterByTag('主流模型')">
+        <div class="feature-icon feature-icon-blue">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h3>主流模型</h3>
+        <p>深入解读 GPT、LLaMA、Claude、Gemini 等主流大语言模型架构与特点，追踪前沿技术发展</p>
+        <div class="feature-tags">
+          <span class="feature-tag">LLM</span>
+          <span class="feature-tag">Transformer</span>
+          <span class="feature-tag">多模态</span>
+        </div>
+        <span class="feature-link">浏览文章 →</span>
+      </div>
+      <div class="feature-card" id="training" onclick="filterByTag('模型训练')">
+        <div class="feature-icon feature-icon-green">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+        </div>
+        <h3>模型训练</h3>
+        <p>涵盖预训练、微调、RLHF、LoRA、量化训练等高效训练方法，分享分布式训练实战经验</p>
+        <div class="feature-tags">
+          <span class="feature-tag">Pre-training</span>
+          <span class="feature-tag">Fine-tuning</span>
+          <span class="feature-tag">分布式训练</span>
+        </div>
+        <span class="feature-link">浏览文章 →</span>
+      </div>
+      <div class="feature-card" id="inference" onclick="filterByTag('模型推理')">
+        <div class="feature-icon feature-icon-purple">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <h3>模型推理</h3>
+        <p>探索 vLLM、TensorRT、ONNX Runtime 等推理加速框架，优化部署性能与推理效率</p>
+        <div class="feature-tags">
+          <span class="feature-tag">推理加速</span>
+          <span class="feature-tag">部署</span>
+          <span class="feature-tag">KV Cache</span>
+        </div>
+        <span class="feature-link">浏览文章 →</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== Tech Stack ==================== -->
+  <section class="tech-section">
+    <div class="section-label">Tech Stack</div>
+    <h2 class="section-title">常用技术栈</h2>
+    <p class="section-desc">日常工作中使用的主流 AI/ML 工具与框架</p>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <span class="tech-icon">🐍</span>
+        <span>Python</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">🔥</span>
+        <span>PyTorch</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">🤗</span>
+        <span>Transformers</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">⚡</span>
+        <span>vLLM</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">📐</span>
+        <span>TensorRT</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">☁️</span>
+        <span>Kubernetes</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">🖥️</span>
+        <span>CUDA</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">📊</span>
+        <span>MLflow</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">🧪</span>
+        <span>W&B</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-icon">🔧</span>
+        <span>Docker</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== Main Content ==================== -->
   <div class="main-content">
     <!-- Posts -->
     <main class="posts-section" role="main">
       <div class="section-header">
-        <h2>📝 Blog Posts</h2>
-        <span class="post-count" id="post-count">0 posts</span>
+        <h2>📝 最新文章</h2>
+        <span class="post-count" id="post-count">0 篇</span>
       </div>
 
       <!-- Filter Bar -->
@@ -92,9 +229,13 @@
           <input
             type="text"
             id="search-input"
-            placeholder="Search posts..."
-            aria-label="Search blog posts"
+            placeholder="搜索文章..."
+            aria-label="搜索文章"
           >
+        </div>
+        <div class="filter-active" id="filter-active" style="display:none;">
+          <span id="filter-label"></span>
+          <button id="filter-clear" class="filter-clear">✕</button>
         </div>
         <div class="tag-filters" id="tag-filters"></div>
       </div>
@@ -103,7 +244,7 @@
       <div id="posts-container">
         <div class="loading">
           <div class="spinner"></div>
-          <p style="margin-top:8px">Loading posts...</p>
+          <p style="margin-top:8px">加载中...</p>
         </div>
       </div>
     </main>
@@ -112,24 +253,25 @@
     <aside class="sidebar" role="complementary">
       <!-- About Card -->
       <div class="sidebar-card" id="about">
-        <div class="sidebar-card-header">About</div>
+        <div class="sidebar-card-header">👤 关于</div>
         <div class="sidebar-card-body sidebar-about">
+          <div class="sidebar-avatar-wrapper">
+            <div class="sidebar-avatar">L</div>
+          </div>
           <p>
-            Hi, I'm a full-stack developer passionate about building great software.
-            This blog is my space to share what I learn along the way.
+            AI/ML 工程师，热爱深度学习与大规模模型训练。
           </p>
           <p>
-            Topics include web development, programming languages, dev tools,
-            and best practices.
+            分享在 <strong>主流模型</strong>、<strong>模型训练</strong> 和 <strong>模型推理</strong> 方面的实践经验。
           </p>
           <div class="sidebar-stats">
             <div class="stat-item">
               <span class="stat-number" id="stat-posts">0</span>
-              <span class="stat-label">Posts</span>
+              <span class="stat-label">文章</span>
             </div>
             <div class="stat-item">
               <span class="stat-number" id="stat-tags">0</span>
-              <span class="stat-label">Tags</span>
+              <span class="stat-label">标签</span>
             </div>
           </div>
         </div>
@@ -137,7 +279,7 @@
 
       <!-- Tags Card -->
       <div class="sidebar-card">
-        <div class="sidebar-card-header">Tags</div>
+        <div class="sidebar-card-header">🏷️ 标签</div>
         <div class="sidebar-card-body">
           <div class="sidebar-tags" id="sidebar-tags"></div>
         </div>
@@ -145,7 +287,7 @@
 
       <!-- Recent Posts Card -->
       <div class="sidebar-card">
-        <div class="sidebar-card-header">Recent Posts</div>
+        <div class="sidebar-card-header">📄 最近文章</div>
         <div class="sidebar-card-body" id="recent-posts"></div>
       </div>
     </aside>
@@ -155,19 +297,20 @@
   <footer class="site-footer" role="contentinfo">
     <div class="footer-content">
       <div class="footer-left">
-        <span class="footer-brand">My Blog</span>
-        <p>&copy; 2026 <a href="https://github.com/Lsilense" target="_blank" rel="noopener">Lsilense</a> — Built with <a href="https://pages.github.com" target="_blank" rel="noopener">GitHub Pages</a></p>
+        <span class="footer-brand">Lsilense Blog</span>
+        <p>&copy; 2026 <a href="https://github.com/Lsilense" target="_blank" rel="noopener">Lsilense</a> — Built with GitHub Pages</p>
       </div>
       <ul class="footer-links">
         <li><a href="https://github.com/Lsilense" target="_blank" rel="noopener">GitHub</a></li>
-        <li><a href="#">RSS Feed</a></li>
-        <li><a href="#about">About</a></li>
+        <li><a href="#models">主流模型</a></li>
+        <li><a href="#training">模型训练</a></li>
+        <li><a href="#inference">模型推理</a></li>
       </ul>
     </div>
   </footer>
 
   <!-- ==================== Post Modal ==================== -->
-  <div class="post-modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="Post detail">
+  <div class="post-modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="文章详情">
     <article class="post-modal">
       <div class="post-modal-header">
         <div class="modal-title-area">
@@ -177,7 +320,7 @@
             <span class="modal-tags" id="modal-tags"></span>
           </div>
         </div>
-        <button class="modal-close" id="modal-close" aria-label="Close modal">
+        <button class="modal-close" id="modal-close" aria-label="关闭">
           <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
             <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/>
           </svg>
@@ -185,10 +328,9 @@
       </div>
       <div class="post-modal-body" id="modal-body"></div>
       <div class="post-modal-footer">
-        <span>Share this post:</span>
+        <span>分享:</span>
         <div class="share-links">
-          <a href="#" class="share-link">📋 Copy Link</a>
-          <a href="https://github.com/Lsilense" class="share-link" target="_blank" rel="noopener">🐙 View on GitHub</a>
+          <a href="#" class="share-link" id="share-copy">📋 复制链接</a>
         </div>
       </div>
     </article>

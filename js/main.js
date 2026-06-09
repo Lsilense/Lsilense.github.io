@@ -1,5 +1,5 @@
 /* ============================================
-   GitHub Blog - JavaScript
+   Lsilense Blog - JavaScript
    Dynamic post loading, filtering, and more
    ============================================ */
 
@@ -31,6 +31,11 @@
   const navLinks = document.getElementById('nav-links');
   const statPosts = document.getElementById('stat-posts');
   const statTags = document.getElementById('stat-tags');
+  const heroStatPosts = document.getElementById('hero-stat-posts');
+  const heroStatTags = document.getElementById('hero-stat-tags');
+  const filterActive = document.getElementById('filter-active');
+  const filterLabel = document.getElementById('filter-label');
+  const filterClear = document.getElementById('filter-clear');
 
   // --- Theme ---
   function initTheme() {
@@ -61,7 +66,7 @@
   function formatDate(dateStr) {
     const date = new Date(dateStr);
     const opts = { year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('en-US', opts);
+    return date.toLocaleDateString('zh-CN', opts);
   }
 
   function escapeHtml(str) {
@@ -78,7 +83,7 @@
 
   // --- Load Posts ---
   async function loadPosts() {
-    postsContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:8px">Loading posts...</p></div>';
+    postsContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:8px">加载中...</p></div>';
 
     try {
       const res = await fetch('posts.json');
@@ -89,8 +94,8 @@
       postsContainer.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">📝</div>
-          <h3>No posts yet</h3>
-          <p>Check back soon for new content!</p>
+          <h3>还没有文章</h3>
+          <p>敬请期待新内容！</p>
         </div>`;
       console.error('Error loading posts:', err);
     }
@@ -108,14 +113,14 @@
   function renderPosts() {
     const filtered = getFilteredPosts();
 
-    postCount.textContent = `${filtered.length} post${filtered.length !== 1 ? 's' : ''}`;
+    postCount.textContent = `${filtered.length} 篇`;
 
     if (filtered.length === 0) {
       postsContainer.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">🔍</div>
-          <h3>No posts found</h3>
-          <p>Try adjusting your search or filter.</p>
+          <h3>没有找到相关文章</h3>
+          <p>试试调整搜索或筛选条件</p>
         </div>`;
       return;
     }
@@ -123,10 +128,7 @@
     postsContainer.innerHTML = filtered.map((post, index) => `
       <article class="post-card" data-post-id="${escapeHtml(post.id)}" style="animation-delay: ${index * 0.05}s">
         <div class="post-card-header">
-          <span class="post-date">
-            <span class="post-date-icon">📅</span>
-            ${formatDate(post.date)}
-          </span>
+          <span class="post-date">📅 ${formatDate(post.date)}</span>
         </div>
         <h3>${escapeHtml(post.title)}</h3>
         <p class="post-excerpt">${escapeHtml(post.excerpt)}</p>
@@ -158,7 +160,7 @@
   function renderTagFilters() {
     const allTags = getAllTags(posts);
     tagFilters.innerHTML = `
-      <button class="tag-filter ${!currentFilter.tag ? 'active' : ''}" data-tag="">All</button>
+      <button class="tag-filter ${!currentFilter.tag ? 'active' : ''}" data-tag="">全部</button>
       ${allTags.map(t => `
         <button class="tag-filter ${currentFilter.tag === t ? 'active' : ''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>
       `).join('')}
@@ -204,8 +206,13 @@
   }
 
   function updateStats() {
-    if (statPosts) statPosts.textContent = posts.length;
-    if (statTags) statTags.textContent = getAllTags(posts).length;
+    const postCountNum = posts.length;
+    const tagsCount = getAllTags(posts).length;
+
+    if (statPosts) statPosts.textContent = postCountNum;
+    if (statTags) statTags.textContent = tagsCount;
+    if (heroStatPosts) heroStatPosts.textContent = postCountNum;
+    if (heroStatTags) heroStatTags.textContent = tagsCount;
   }
 
   // --- Filtering ---
@@ -222,10 +229,28 @@
     });
   }
 
+  // Expose filterByTag globally for feature card onclick
+  window.filterByTag = function(tag) {
+    setActiveTagFilter(tag);
+    // Scroll to posts section
+    document.querySelector('.posts-section').scrollIntoView({ behavior: 'smooth' });
+  };
+
   function setActiveTagFilter(tag) {
     currentFilter.tag = tag;
-    searchInput.value = '';
     currentFilter.search = '';
+    if (searchInput) searchInput.value = '';
+
+    // Update active filter indicator
+    if (filterActive && filterLabel) {
+      if (tag) {
+        filterActive.style.display = 'inline-flex';
+        filterLabel.textContent = '筛选: ' + tag;
+      } else {
+        filterActive.style.display = 'none';
+      }
+    }
+
     renderAll();
   }
 
@@ -234,6 +259,10 @@
     debounceTimer = setTimeout(() => {
       currentFilter.search = value;
       currentFilter.tag = null;
+
+      // Hide filter indicator when searching
+      if (filterActive) filterActive.style.display = 'none';
+
       renderAll();
     }, 250);
   }
@@ -246,25 +275,20 @@
       `<span class="post-tag">${escapeHtml(t)}</span>`
     ).join('');
 
-    // Render content with markdown-like code formatting
     modalBody.innerHTML = post.content;
 
-    // Copy URL for sharing
-    modalFooter.querySelector('.share-link:first-child').onclick = () => {
-      const url = `${window.location.origin}${window.location.pathname}?post=${post.id}`;
-      navigator.clipboard.writeText(url).then(() => {
-        const btn = modalFooter.querySelector('.share-link:first-child');
-        const orig = btn.textContent;
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => { btn.textContent = orig; }, 2000);
-      });
-    };
-
-    // Update "View on GitHub" link
-    modalFooter.querySelector('.share-link:last-child').addEventListener('click', (e) => {
-      e.preventDefault();
-      window.open(`https://github.com/Lsilense`, '_blank');
-    });
+    // Copy link button
+    const shareCopy = document.getElementById('share-copy');
+    if (shareCopy) {
+      shareCopy.onclick = () => {
+        const url = `${window.location.origin}${window.location.pathname}?post=${post.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+          const orig = shareCopy.textContent;
+          shareCopy.textContent = '✅ 已复制!';
+          setTimeout(() => { shareCopy.textContent = orig; }, 2000);
+        });
+      };
+    }
 
     modalOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -294,6 +318,13 @@
     if (e.target === modalOverlay) closePostModal();
   });
 
+  // Clear filter
+  if (filterClear) {
+    filterClear.addEventListener('click', () => {
+      setActiveTagFilter(null);
+    });
+  }
+
   // --- Init ---
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
@@ -317,6 +348,9 @@
     // Modal close
     if (modalClose) modalClose.addEventListener('click', closePostModal);
 
+    // Highlight active nav link on scroll
+    // (simple: just update on section visibility)
+
     // Load posts
     loadPosts();
 
@@ -331,7 +365,6 @@
     const params = new URLSearchParams(window.location.search);
     const postId = params.get('post');
     if (postId) {
-      // Wait for posts to load then open
       const checkPost = setInterval(() => {
         const post = posts.find(p => p.id === postId);
         if (post) {
@@ -339,7 +372,7 @@
           openPostModal(post);
         }
       }, 200);
-      setTimeout(() => clearInterval(checkPost), 10000); // timeout
+      setTimeout(() => clearInterval(checkPost), 10000);
     }
   });
 
