@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>文章 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">首页</a></li><li><a href="research.html">研究方向</a></li>
+        <li><a href="tech-stack.html">技术栈</a></li><li><a href="posts.html" class="active">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<div class="posts-wrap" style="padding-top:100px">
+  <main class="p-list" role="main">
+    <div class="posts-header">
+      <h2>📝 全部文章</h2>
+      <span class="post-count" id="post-count">0</span>
+    </div>
+    <div class="filters">
+      <div class="f-search">
+        <span class="s-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="搜索文章..." aria-label="搜索文章">
+      </div>
+      <div class="f-active" id="f-active" style="display:none">
+        <span id="f-label"></span>
+        <button class="f-clear" id="f-clear">✕</button>
+      </div>
+      <div class="f-tags" id="f-tags"></div>
+    </div>
+    <div id="p-container">
+      <div class="p-loading"><div class="spinner"></div><p style="margin-top:8px;font-size:.8125rem">加载中...</p></div>
+    </div>
+  </main>
+  <aside class="sidebar" role="complementary">
+    <div class="s-card">
+      <div class="s-card-hd">👤 关于</div>
+      <div class="s-card-bd s-about">
+        <div class="s-avatar">L</div>
+        <p>AI/ML 工程师，专注于主流模型架构、模型训练技术和推理优化。</p>
+        <p>分享大规模深度学习的一线实践经验。</p>
+        <div class="s-stats">
+          <div class="s-stat"><span class="s-stat-num" id="s-posts">0</span><span class="s-stat-lbl">文章</span></div>
+          <div class="s-stat"><span class="s-stat-num" id="s-tags-count">0</span><span class="s-stat-lbl">标签</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="s-card">
+      <div class="s-card-hd">🏷️ 标签</div>
+      <div class="s-card-bd"><div class="s-tags" id="s-tags"></div></div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="research.html">研究</a></li><li><a href="tech-stack.html">技术栈</a></li>
+      <li><a href="posts.html">文章</a></li><li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+<script src="js/main.js"></script>
+<script>
+(function(){
+'use strict';
+
+var posts=[];
+var filter={tag:null,search:''};
+var timer=null;
+
+function $(id){return document.getElementById(id)}
+
+var c=$('p-container'),cCount=$('post-count'),sIn=$('search-input');
+var fTags=$('f-tags'),sTags=$('s-tags');
+var sP=$('s-posts'),sT=$('s-tags-count');
+var fActive=$('f-active'),fLabel=$('f-label'),fClear=$('f-clear');
+
+function fmt(d){return new Date(d).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function allTags(){var s=new Set;posts.forEach(function(p){p.tags.forEach(function(t){s.add(t)})});return[...s].sort()}
+
+// Read URL tag param
+var urlParams=new URLSearchParams(window.location.search);
+var urlTag=urlParams.get('tag');
+if(urlTag)filter.tag=urlTag;
+
+async function load(){
+  c.innerHTML='<div class="p-loading"><div class="spinner"></div><p style="margin-top:8px;font-size:.8125rem">加载中...</p></div>';
+  try{
+    var r=await fetch('posts.json');
+    if(!r.ok)throw Error('fail');
+    posts=await r.json();
+    render();
+  }catch(e){
+    c.innerHTML='<div class="empty-state"><div class="e-icon">📝</div><h3>暂无文章</h3><p>敬请期待。</p></div>';
+  }
+}
+
+function render(){
+  renderTags();renderSideTags();renderPosts();updateStats();
+  // Show active filter indicator
+  if(fActive&&fLabel){
+    if(filter.tag){fActive.style.display='inline-flex';fLabel.textContent=filter.tag}
+    else fActive.style.display='none'
+  }
+}
+
+function renderPosts(){
+  var f=getFiltered();
+  cCount.textContent=f.length+' 篇文章';
+  if(!f.length){c.innerHTML='<div class="empty-state"><div class="e-icon">🔍</div><h3>没有找到文章</h3><p>试试其他筛选条件。</p></div>';return}
+  c.innerHTML=f.map(function(p,i){
+    return '<article class="post-card" onclick="location.href=\'posts/'+esc(p.id)+'.html\'" style="animation-delay:'+(i*.05)+'s">'+
+      '<div class="p-date">📅 '+fmt(p.date)+'</div>'+
+      '<h3>'+esc(p.title)+'</h3>'+
+      '<p class="p-excerpt">'+esc(p.excerpt)+'</p>'+
+      '<div class="p-tags">'+p.tags.map(function(t){return '<span class="p-tag">'+esc(t)+'</span>'}).join('')+'</div>'+
+      '</article>'
+  }).join('');
+}
+
+function renderTags(){
+  var a=allTags();
+  fTags.innerHTML='<button class="f-tag'+(filter.tag?'':' active')+'" data-t="">全部</button>'+
+    a.map(function(t){return '<button class="f-tag'+(filter.tag===t?' active':'')+'" data-t="'+esc(t)+'">'+esc(t)+'</button>'}).join('');
+  fTags.querySelectorAll('.f-tag').forEach(function(b){
+    b.addEventListener('click',function(){setFilter(b.dataset.tag||null)});
+  });
+}
+
+function renderSideTags(){
+  sTags.innerHTML=allTags().map(function(t){return '<span class="s-tag" data-t="'+esc(t)+'">'+esc(t)+'</span>'}).join('');
+  sTags.querySelectorAll('.s-tag').forEach(function(el){
+    el.addEventListener('click',function(){setFilter(el.dataset.t)});
+  });
+}
+
+function updateStats(){
+  var n=posts.length,all=allTags().length;
+  if(sP)sP.textContent=n;if(sT)sT.textContent=all;
+}
+
+function getFiltered(){
+  // Use URL tag param if set
+  return posts.filter(function(p){
+    if(filter.tag&&!p.tags.includes(filter.tag))return false;
+    if(filter.search){
+      var q=filter.search.toLowerCase();
+      return p.title.toLowerCase().indexOf(q)!==-1||p.excerpt.toLowerCase().indexOf(q)!==-1||p.tags.some(function(t){return t.toLowerCase().indexOf(q)!==-1});
+    }
+    return true;
+  });
+}
+
+function setFilter(tag){
+  filter.tag=tag;filter.search='';
+  if(sIn)sIn.value='';
+  // Clear URL params
+  if(window.history.replaceState)window.history.replaceState(null,'',window.location.pathname);
+  render();
+}
+
+function handleSearch(v){
+  clearTimeout(timer);
+  timer=setTimeout(function(){
+    filter.search=v;filter.tag=null;
+    if(fActive)fActive.style.display='none';
+    if(window.history.replaceState)window.history.replaceState(null,'',window.location.pathname);
+    render();
+  },200);
+}
+
+if(sIn)sIn.addEventListener('input',function(e){handleSearch(e.target.value)});
+if(fClear)fClear.addEventListener('click',function(){setFilter(null)});
+
+load();
+})();
+</script>
+</body>
+</html>

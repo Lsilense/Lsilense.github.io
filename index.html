@@ -7,590 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-/* ═══════════════════════════════════════════
-   Lsilense · AI Research Blog
-   Design: editorial dark × technical precision
-   ═══════════════════════════════════════════ */
-
-/* ── Reset ── */
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth;font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;background:#0a0c10;color:#e8e4dd;line-height:1.6;overflow-x:hidden}
-a{color:inherit;text-decoration:none}
-img{max-width:100%;height:auto}
-::selection{background:rgba(217,119,43,.35);color:#fff}
-
-/* ── Variables ── */
-:root{
-  --bg:#0a0c10;
-  --surface:#111318;
-  --elevated:#191c22;
-  --hover:#1f222a;
-  --border:#252831;
-  --border-light:#1d2026;
-  --text:#e8e4dd;
-  --text2:#92969e;
-  --text3:#5c5f68;
-
-  --copper:#d9772b;
-  --copper-light:#e89544;
-  --copper-glow:rgba(217,119,43,.15);
-  --teal:#2dd4bf;
-  --teal-glow:rgba(45,212,191,.12);
-  --blue:#60a5fa;
-  --blue-glow:rgba(96,165,250,.12);
-  --green:#34d399;
-  --pink:#e879f9;
-
-  --radius-sm:6px;
-  --radius-md:10px;
-  --radius-lg:18px;
-
-  --font-head:'Sora',sans-serif;
-  --font-body:'DM Sans',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;
-}
-
-/* ── Background grid ── */
-body::before{
-  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background-image:
-    linear-gradient(rgba(37,40,49,.25) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(37,40,49,.25) 1px,transparent 1px);
-  background-size:48px 48px;
-}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--surface)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-
-/* ════════════════════════════════
-   NAVIGATION
-   ════════════════════════════════ */
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(10,12,16,.72);backdrop-filter:blur(16px) saturate(1.4);
-  -webkit-backdrop-filter:blur(16px) saturate(1.4);
-  border-bottom:1px solid var(--border-light);
-  transition:border-color .3s;
-}
-nav.scrolled{border-color:var(--border)}
-.nav-inner{
-  max-width:1200px;margin:0 auto;padding:0 24px;
-  display:flex;align-items:center;justify-content:space-between;height:60px;
-}
-.nav-left{display:flex;align-items:center;gap:28px}
-.nav-logo{
-  display:flex;align-items:center;gap:10px;
-  font-family:var(--font-head);font-weight:700;font-size:1rem;color:var(--text);
-}
-.nav-logo-mark{
-  width:28px;height:28px;border-radius:8px;
-  background:linear-gradient(135deg,var(--copper),var(--copper-light));
-  display:flex;align-items:center;justify-content:center;
-  font-size:.8125rem;font-weight:800;color:#fff;
-}
-.nav-links{display:flex;gap:2px;list-style:none}
-.nav-links a{
-  padding:6px 14px;border-radius:var(--radius-sm);
-  font-size:.8125rem;font-weight:500;color:var(--text2);
-  transition:all .2s;position:relative;
-}
-.nav-links a::after{
-  content:'';position:absolute;bottom:2px;left:50%;translate:-50% 0;
-  width:0;height:2px;border-radius:1px;background:var(--copper);
-  transition:width .25s;
-}
-.nav-links a:hover{color:var(--text);background:var(--hover)}
-.nav-links a:hover::after{width:20px}
-.nav-right{display:flex;align-items:center;gap:8px}
-.theme-btn{
-  background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
-  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:var(--text2);font-size:1rem;transition:all .2s;
-}
-.theme-btn:hover{color:var(--text);background:var(--hover);border-color:var(--text3)}
-.mobile-btn{display:none;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;cursor:pointer;color:var(--text2)}
-
-/* ════════════════════════════════
-   HERO
-   ════════════════════════════════ */
-.hero{
-  padding:120px 24px 80px;position:relative;overflow:hidden;
-}
-.hero::before{
-  content:'';position:absolute;top:-40%;right:-15%;width:700px;height:700px;
-  border-radius:50%;
-  background:radial-gradient(circle,var(--copper-glow) 0%,transparent 65%);
-  pointer-events:none;
-}
-.hero::after{
-  content:'';position:absolute;bottom:-30%;left:-10%;width:500px;height:500px;
-  border-radius:50%;
-  background:radial-gradient(circle,rgba(45,212,191,.06) 0%,transparent 60%);
-  pointer-events:none;
-}
-.hero-inner{
-  max-width:1200px;margin:0 auto;
-  display:grid;grid-template-columns:1fr 420px;gap:60px;align-items:center;
-  position:relative;z-index:1;
-}
-
-/* Hero text */
-.hero-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  font-family:var(--font-mono);font-size:.6875rem;font-weight:500;
-  color:var(--copper-light);background:var(--copper-glow);
-  padding:5px 12px;border-radius:20px;
-  letter-spacing:.02em;margin-bottom:20px;
-  border:1px solid rgba(217,119,43,.15);
-}
-.hero-badge span{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse-dot 2s ease-in-out infinite}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.35}}
-
-.hero h1{
-  font-family:var(--font-head);font-size:clamp(2.5rem,5vw,4rem);font-weight:800;
-  letter-spacing:-.035em;line-height:1.08;margin-bottom:16px;
-}
-.hero h1 .gradient{
-  background:linear-gradient(135deg,var(--copper-light),var(--teal));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.hero-lead{
-  font-size:1.125rem;color:var(--text2);margin-bottom:14px;font-weight:500;
-}
-.hero-desc{
-  font-size:.9375rem;color:var(--text3);line-height:1.7;max-width:500px;margin-bottom:28px;
-}
-
-/* Stats */
-.hero-stats{display:flex;gap:36px;margin-bottom:28px}
-.hero-stat-value{
-  display:block;font-family:var(--font-head);font-size:1.625rem;font-weight:700;
-  color:var(--text);letter-spacing:-.02em;
-}
-.hero-stat-label{
-  font-size:.6875rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;
-  font-weight:500;
-}
-
-/* Buttons */
-.hero-btns{display:flex;gap:10px;flex-wrap:wrap}
-.btn{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:9px 20px;border-radius:var(--radius-md);
-  font-size:.8125rem;font-weight:600;font-family:var(--font-body);
-  transition:all .25s;cursor:pointer;border:none;
-}
-.btn-primary{
-  background:linear-gradient(135deg,var(--copper),var(--copper-light));color:#fff;
-  box-shadow:0 2px 12px var(--copper-glow);
-}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 20px var(--copper-glow)}
-.btn-secondary{
-  background:var(--surface);color:var(--text2);
-  border:1px solid var(--border);
-}
-.btn-secondary:hover{background:var(--hover);color:var(--text);border-color:var(--text3);transform:translateY(-2px)}
-
-/* Terminal */
-.terminal{
-  background:#0d0f14;border-radius:var(--radius-lg);
-  border:1px solid var(--border);
-  box-shadow:0 16px 48px rgba(0,0,0,.5),0 0 0 1px rgba(217,119,43,.06);
-  overflow:hidden;position:relative;
-}
-.terminal::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(217,119,43,.03) 0%,transparent 50%);
-  pointer-events:none;
-}
-.terminal-bar{
-  display:flex;align-items:center;gap:8px;
-  padding:12px 16px;border-bottom:1px solid var(--border-light);
-}
-.terminal-bar span{width:9px;height:9px;border-radius:50%}
-.terminal-bar span:nth-child(1){background:#ff5f56}
-.terminal-bar span:nth-child(2){background:#ffbd2e}
-.terminal-bar span:nth-child(3){background:#27c93f}
-.terminal-label{
-  margin-left:auto;font-family:var(--font-mono);font-size:.625rem;color:var(--text3);
-  text-transform:uppercase;letter-spacing:.04em;
-}
-.terminal pre{
-  padding:20px;margin:0;
-  font-family:var(--font-mono);font-size:.78125rem;line-height:1.8;
-  overflow-x:auto;color:var(--text2);
-}
-.term-comment{color:var(--text3);font-style:italic}
-.term-key{color:var(--copper-light);font-weight:600}
-.term-func{color:var(--blue)}
-.term-arg{color:var(--text2)}
-.term-str{color:var(--green)}
-.term-num{color:var(--pink)}
-
-/* ════════════════════════════════
-   RESEARCH AREAS
-   ════════════════════════════════ */
-.research{
-  max-width:1200px;margin:0 auto;padding:80px 24px 60px;position:relative;
-}
-.research-label{
-  display:inline-block;font-family:var(--font-mono);font-size:.6875rem;
-  font-weight:500;color:var(--copper-light);text-transform:uppercase;
-  letter-spacing:.08em;margin-bottom:12px;
-}
-.research-label::before{content:'// ';color:var(--text3)}
-.research h2{
-  font-family:var(--font-head);font-size:clamp(1.75rem,3vw,2.5rem);
-  font-weight:700;letter-spacing:-.025em;margin-bottom:8px;
-}
-.research-sub{
-  color:var(--text2);font-size:.9375rem;margin-bottom:40px;
-}
-.research-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
-}
-.r-card{
-  background:var(--surface);border:1px solid var(--border-light);
-  border-radius:var(--radius-lg);padding:32px;
-  position:relative;overflow:hidden;cursor:pointer;
-  transition:all .35s cubic-bezier(.22,1,.36,1);
-  scroll-margin-top:80px;
-}
-.r-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:3px;opacity:0;
-  transition:opacity .35s;
-}
-.r-card:nth-child(1)::before{background:linear-gradient(90deg,var(--copper),var(--copper-light))}
-.r-card:nth-child(2)::before{background:linear-gradient(90deg,var(--teal),#5eead4)}
-.r-card:nth-child(3)::before{background:linear-gradient(90deg,var(--blue),#93bbfc)}
-
-.r-card:hover{
-  border-color:transparent;transform:translateY(-6px);
-  box-shadow:0 12px 40px rgba(0,0,0,.4);
-}
-.r-card:hover::before{opacity:1}
-
-.r-card-glow{
-  position:absolute;top:-50%;right:-50%;width:200%;height:200%;
-  border-radius:50%;pointer-events:none;opacity:0;transition:opacity .5s;
-}
-.r-card:nth-child(1) .r-card-glow{background:radial-gradient(circle,var(--copper-glow) 0%,transparent 50%)}
-.r-card:nth-child(2) .r-card-glow{background:radial-gradient(circle,var(--teal-glow) 0%,transparent 50%)}
-.r-card:nth-child(3) .r-card-glow{background:radial-gradient(circle,var(--blue-glow) 0%,transparent 50%)}
-.r-card:hover .r-card-glow{opacity:1}
-
-.r-icon{
-  width:48px;height:48px;border-radius:var(--radius-md);
-  display:flex;align-items:center;justify-content:center;margin-bottom:18px;
-  position:relative;z-index:1;
-}
-.r-card:nth-child(1) .r-icon{background:var(--copper-glow);color:var(--copper-light)}
-.r-card:nth-child(2) .r-icon{background:var(--teal-glow);color:var(--teal)}
-.r-card:nth-child(3) .r-icon{background:var(--blue-glow);color:var(--blue)}
-
-.r-card h3{font-family:var(--font-head);font-size:1.125rem;font-weight:700;margin-bottom:10px;position:relative;z-index:1}
-.r-card p{font-size:.825rem;color:var(--text2);line-height:1.7;margin-bottom:14px;position:relative;z-index:1}
-.r-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px;position:relative;z-index:1}
-.r-tag{
-  padding:2px 10px;border-radius:12px;font-size:.6875rem;font-weight:500;
-  background:var(--hover);color:var(--text2);
-}
-.r-card:nth-child(1) .r-tag{background:var(--copper-glow);color:var(--copper-light)}
-.r-card:nth-child(2) .r-tag{background:var(--teal-glow);color:var(--teal)}
-.r-card:nth-child(3) .r-tag{background:var(--blue-glow);color:var(--blue)}
-.r-link{
-  font-size:.75rem;font-weight:600;color:var(--text3);position:relative;z-index:1;
-  display:inline-flex;align-items:center;gap:4px;transition:all .25s;font-family:var(--font-mono);
-}
-.r-card:hover .r-link{color:var(--text);gap:10px}
-
-/* ════════════════════════════════
-   TECH STACK
-   ════════════════════════════════ */
-.tech{max-width:1200px;margin:0 auto;padding:60px 24px 80px}
-.tech-label{
-  display:inline-block;font-family:var(--font-mono);font-size:.6875rem;
-  font-weight:500;color:var(--copper-light);text-transform:uppercase;
-  letter-spacing:.08em;margin-bottom:12px;
-}
-.tech-label::before{content:'// ';color:var(--text3)}
-.tech h2{
-  font-family:var(--font-head);font-size:clamp(1.5rem,2.5vw,2rem);
-  font-weight:700;letter-spacing:-.02em;margin-bottom:8px;
-}
-.tech-sub{color:var(--text2);font-size:.9375rem;margin-bottom:32px}
-.tech-grid{
-  display:flex;flex-wrap:wrap;gap:10px;justify-content:center;
-}
-.tech-item{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:10px 18px;border-radius:var(--radius-md);
-  background:var(--surface);border:1px solid var(--border-light);
-  font-size:.8125rem;font-weight:500;color:var(--text2);
-  transition:all .25s;cursor:default;
-}
-.tech-item:hover{
-  background:var(--hover);border-color:var(--copper);color:var(--text);
-  transform:translateY(-3px);box-shadow:0 4px 16px rgba(217,119,43,.08);
-}
-.tech-item .t-icon{font-size:1rem}
-
-/* ════════════════════════════════
-   BLOG POSTS
-   ════════════════════════════════ */
-.posts-wrap{
-  max-width:1200px;margin:0 auto;padding:60px 24px 80px;
-  display:grid;grid-template-columns:1fr 280px;gap:48px;
-}
-
-/* Posts header */
-.posts-header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:24px;padding-bottom:16px;
-  border-bottom:1px solid var(--border-light);
-}
-.posts-header h2{
-  font-family:var(--font-head);font-size:1.125rem;font-weight:700;
-}
-.post-count{
-  font-size:.75rem;color:var(--text3);
-  background:var(--surface);padding:2px 10px;border-radius:12px;
-}
-
-/* Filters */
-.filters{display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap}
-.f-search{
-  flex:1;min-width:180px;position:relative;
-}
-.f-search input{
-  width:100%;padding:8px 12px 8px 34px;
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--surface);color:var(--text);
-  font-family:var(--font-body);font-size:.8125rem;
-  transition:all .2s;outline:none;
-}
-.f-search input:focus{border-color:var(--copper);box-shadow:0 0 0 3px var(--copper-glow)}
-.f-search .s-icon{
-  position:absolute;left:10px;top:50%;translate:0 -50%;
-  color:var(--text3);font-size:.8125rem;pointer-events:none;
-}
-.f-tags{display:flex;gap:4px;flex-wrap:wrap}
-.f-tag{
-  padding:4px 12px;border-radius:20px;border:1px solid var(--border);
-  background:transparent;color:var(--text2);
-  font-family:var(--font-body);font-size:.6875rem;font-weight:500;
-  cursor:pointer;transition:all .2s;
-}
-.f-tag:hover{border-color:var(--copper);color:var(--copper-light)}
-.f-tag.active{background:var(--copper-glow);border-color:var(--copper);color:var(--copper-light)}
-.f-active{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:3px 10px;border-radius:20px;
-  background:var(--copper-glow);color:var(--copper-light);
-  font-size:.75rem;font-weight:500;border:1px solid rgba(217,119,43,.2);
-}
-.f-clear{background:none;border:none;cursor:pointer;color:var(--copper-light);font-size:.75rem;padding:0 2px;opacity:.7;transition:opacity .2s}
-.f-clear:hover{opacity:1}
-
-/* Post cards */
-.p-list{min-width:0}
-.post-card{
-  background:var(--surface);border:1px solid var(--border-light);
-  border-radius:var(--radius-md);padding:24px;margin-bottom:14px;
-  cursor:pointer;transition:all .3s cubic-bezier(.22,1,.36,1);
-  position:relative;overflow:hidden;
-}
-.post-card::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:var(--copper);opacity:0;transition:opacity .3s;
-}
-.post-card:hover{
-  border-color:transparent;transform:translateX(4px);
-  box-shadow:0 6px 20px rgba(0,0,0,.3);
-}
-.post-card:hover::before{opacity:1}
-.p-date{font-size:.75rem;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:5px}
-.post-card h3{font-family:var(--font-head);font-size:1rem;font-weight:600;margin-bottom:6px;transition:color .2s}
-.post-card:hover h3{color:var(--copper-light)}
-.p-excerpt{font-size:.8125rem;color:var(--text2);line-height:1.6;margin-bottom:10px}
-.p-excerpt::after{content:'阅读全文 →';margin-left:6px;color:var(--copper-light);font-weight:500;font-size:.75rem}
-.p-tags{display:flex;gap:4px;flex-wrap:wrap}
-.p-tag{
-  padding:1px 8px;border-radius:10px;font-size:.6875rem;font-weight:500;
-  background:var(--hover);color:var(--text2);transition:all .2s;
-  cursor:pointer;
-}
-.p-tag:hover{background:var(--copper-glow);color:var(--copper-light)}
-
-/* Loading */
-.p-loading{text-align:center;padding:48px;color:var(--text3)}
-.spinner{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--copper);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
-.empty-state .e-icon{font-size:2.5rem;margin-bottom:12px}
-.empty-state h3{font-family:var(--font-head);font-size:1rem;color:var(--text2);margin-bottom:6px}
-.empty-state p{font-size:.8125rem}
-
-/* ── Sidebar ── */
-.sidebar{position:sticky;top:80px;align-self:start}
-.s-card{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
-.s-card-hd{padding:12px 16px;font-size:.75rem;font-weight:600;border-bottom:1px solid var(--border-light);background:var(--hover);font-family:var(--font-head)}
-.s-card-bd{padding:16px}
-.s-avatar{width:56px;height:56px;border-radius:50%;margin:0 auto 14px;display:block;background:linear-gradient(135deg,var(--copper),var(--teal));display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:1.25rem;font-weight:800;color:#fff}
-.s-about p{font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:10px}
-.s-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-light)}
-.s-stat{text-align:center}
-.s-stat-num{display:block;font-family:var(--font-head);font-size:1.125rem;font-weight:700;color:var(--text)}
-.s-stat-lbl{font-size:.625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
-.s-tags{display:flex;flex-wrap:wrap;gap:4px}
-.s-tag{padding:2px 9px;border-radius:10px;font-size:.6875rem;font-weight:500;background:var(--hover);color:var(--text2);cursor:pointer;transition:all .2s}
-.s-tag:hover{background:var(--copper-glow);color:var(--copper-light)}
-.s-recent-item{padding:8px 0;border-bottom:1px solid var(--border-light)}
-.s-recent-item:last-child{border-bottom:none;padding-bottom:0}
-.s-recent-item:first-child{padding-top:0}
-.s-recent-item a{display:block;font-size:.75rem;font-weight:500;color:var(--text);margin-bottom:2px;line-height:1.4;transition:color .2s}
-.s-recent-item a:hover{color:var(--copper-light)}
-.s-recent-date{font-size:.625rem;color:var(--text3)}
-
-/* ════════════════════════════════
-   FOOTER
-   ════════════════════════════════ */
-footer{
-  border-top:1px solid var(--border-light);padding:40px 24px 24px;
-  margin-top:20px;
-}
-.ft-inner{
-  max-width:1200px;margin:0 auto;
-  display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;
-}
-.ft-left{display:flex;align-items:center;gap:14px}
-.ft-brand{
-  font-family:var(--font-head);font-weight:700;
-  background:linear-gradient(135deg,var(--copper),var(--teal));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.ft-left p{font-size:.75rem;color:var(--text3)}
-.ft-links{display:flex;gap:16px;list-style:none}
-.ft-links a{font-size:.75rem;color:var(--text3);transition:color .2s}
-.ft-links a:hover{color:var(--copper-light)}
-
-/* ════════════════════════════════
-   MODAL
-   ════════════════════════════════ */
-.modal-overlay{
-  display:none;position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
-  overflow-y:auto;opacity:0;transition:opacity .35s;
-}
-.modal-overlay.active{display:block;opacity:1}
-.modal{
-  max-width:720px;margin:48px auto;background:var(--surface);
-  border:1px solid var(--border);border-radius:var(--radius-lg);
-  box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(24px);
-  transition:transform .35s cubic-bezier(.22,1,.36,1);position:relative;
-}
-.modal-overlay.active .modal{transform:translateY(0)}
-.modal-hd{
-  padding:24px 28px;border-bottom:1px solid var(--border-light);
-  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
-}
-.modal-hd .m-title{flex:1}
-.modal-hd h2{font-family:var(--font-head);font-size:1.375rem;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
-.modal-meta{font-size:.75rem;color:var(--text3);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.modal-close{
-  background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
-  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:var(--text2);flex-shrink:0;transition:all .2s;
-}
-.modal-close:hover{background:var(--hover);color:var(--text)}
-.modal-body{padding:28px;font-size:.9375rem;line-height:1.8;color:var(--text)}
-.modal-body h2{
-  font-family:var(--font-head);font-size:1.25rem;font-weight:600;
-  margin-top:28px;margin-bottom:12px;padding-bottom:8px;
-  border-bottom:1px solid var(--border-light);
-}
-.modal-body h2:first-child{margin-top:0}
-.modal-body h3{font-family:var(--font-head);font-size:1.0625rem;font-weight:600;margin-top:20px;margin-bottom:8px}
-.modal-body p{margin-bottom:14px}
-.modal-body ul,.modal-body ol{margin-bottom:14px;padding-left:22px}
-.modal-body li{margin-bottom:3px}
-.modal-body code{
-  font-family:var(--font-mono);font-size:.82em;padding:2px 6px;border-radius:4px;
-  background:var(--hover);color:var(--copper-light);
-}
-.modal-body pre{
-  margin-bottom:14px;padding:16px;border-radius:var(--radius-md);
-  background:#0d0f14;border:1px solid var(--border);overflow-x:auto;
-}
-.modal-body pre code{background:none;padding:0;border-radius:0;color:var(--text2);font-size:.75rem;line-height:1.7}
-.modal-body blockquote{
-  margin:14px 0;padding:8px 16px;border-left:3px solid var(--copper);
-  background:var(--hover);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text2);
-}
-.modal-ft{
-  padding:14px 28px;border-top:1px solid var(--border-light);
-  display:flex;justify-content:flex-end;align-items:center;gap:8px;
-}
-.modal-ft .share-btn{
-  padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
-  font-size:.6875rem;color:var(--text2);cursor:pointer;transition:all .2s;
-  font-family:var(--font-body);background:none;
-}
-.modal-ft .share-btn:hover{border-color:var(--copper);color:var(--copper-light)}
-
-/* ════════════════════════════════
-   ANIMATIONS
-   ════════════════════════════════ */
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.post-card{animation:fadeUp .35s ease-out both}
-.post-card:nth-child(1){animation-delay:0s}
-.post-card:nth-child(2){animation-delay:.05s}
-.post-card:nth-child(3){animation-delay:.1s}
-.post-card:nth-child(4){animation-delay:.15s}
-.post-card:nth-child(5){animation-delay:.2s}
-.post-card:nth-child(6){animation-delay:.25s}
-.post-card:nth-child(7){animation-delay:.3s}
-
-/* ════════════════════════════════
-   RESPONSIVE
-   ════════════════════════════════ */
-@media(max-width:1024px){
-  .hero-inner{grid-template-columns:1fr;gap:40px}
-  .terminal{max-width:520px}
-  .research-grid{grid-template-columns:repeat(2,1fr)}
-  .posts-wrap{grid-template-columns:1fr 240px;gap:28px}
-}
-@media(max-width:768px){
-  .hero{padding:100px 20px 60px}
-  .nav-links{display:none}
-  .nav-links.open{
-    display:flex;flex-direction:column;position:absolute;top:60px;left:0;right:0;
-    background:rgba(10,12,16,.95);backdrop-filter:blur(16px);
-    border-bottom:1px solid var(--border);padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);
-  }
-  .nav-links.open a{padding:12px 16px;border-radius:var(--radius-sm)}
-  .mobile-btn{display:block}
-  .research-grid{grid-template-columns:1fr}
-  .posts-wrap{grid-template-columns:1fr}
-  .sidebar{position:static}
-  .modal{margin:16px;border-radius:var(--radius-md)}
-  .modal-hd,.modal-body,.modal-ft{padding-left:20px;padding-right:20px}
-}
-@media(max-width:480px){
-  .hero-stats{gap:20px}
-  .hero-stat-value{font-size:1.25rem}
-  .filters{flex-direction:column}
-  .f-search{width:100%}
-  .tech-grid{gap:8px}
-  .tech-item{padding:8px 14px;font-size:.75rem}
-}
-</style>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -598,14 +15,12 @@ footer{
 <nav id="nav" role="navigation">
   <div class="nav-inner">
     <div class="nav-left">
-      <a href="/" class="nav-logo">
-        <span class="nav-logo-mark">L</span>
-        Lsilense
-      </a>
+      <a href="index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
       <ul class="nav-links" id="nav-links">
-        <li><a href="#research">研究方向</a></li>
-        <li><a href="#tech">技术栈</a></li>
-        <li><a href="#posts">文章</a></li>
+        <li><a href="index.html" class="active">首页</a></li>
+        <li><a href="research.html">研究方向</a></li>
+        <li><a href="tech-stack.html">技术栈</a></li>
+        <li><a href="posts.html">文章</a></li>
         <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
       </ul>
     </div>
@@ -632,20 +47,18 @@ footer{
         记录在主流模型架构、训练技术和生产部署中的实践经验与思考。
       </p>
       <div class="hero-stats">
-        <div><span class="hero-stat-value" id="h-posts">0</span><span class="hero-stat-label">文章</span></div>
+        <div><span class="hero-stat-value" id="h-posts">7</span><span class="hero-stat-label">文章</span></div>
         <div><span class="hero-stat-value">3</span><span class="hero-stat-label">研究方向</span></div>
-        <div><span class="hero-stat-value" id="h-tags">0</span><span class="hero-stat-label">标签</span></div>
+        <div><span class="hero-stat-value" id="h-tags">8</span><span class="hero-stat-label">标签</span></div>
       </div>
       <div class="hero-btns">
         <a href="https://github.com/Lsilense" target="_blank" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
           GitHub
         </a>
-        <a href="#posts" class="btn btn-secondary">最新文章</a>
+        <a href="posts.html" class="btn btn-secondary">浏览文章</a>
       </div>
     </div>
-
-    <!-- Terminal -->
     <div class="terminal">
       <div class="terminal-bar">
         <span></span><span></span><span></span>
@@ -673,7 +86,7 @@ footer{
   <h2>研究领域</h2>
   <p class="research-sub">驱动 AI 研究的三大核心方向</p>
   <div class="research-grid">
-    <div class="r-card" id="card-models" onclick="filterBy('主流模型')">
+    <a href="posts.html?tag=%E4%B8%BB%E6%B5%81%E6%A8%A1%E5%9E%8B" class="r-card">
       <div class="r-card-glow"></div>
       <div class="r-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -684,8 +97,8 @@ footer{
       <p>深入分析 GPT、LLaMA、Claude、Gemini 等主流大模型架构，追踪 LLM 与多模态融合的前沿发展。</p>
       <div class="r-tags"><span class="r-tag">LLM</span><span class="r-tag">Transformer</span><span class="r-tag">多模态</span></div>
       <span class="r-link">探索 →</span>
-    </div>
-    <div class="r-card" id="card-training" onclick="filterBy('模型训练')">
+    </a>
+    <a href="posts.html?tag=%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83" class="r-card">
       <div class="r-card-glow"></div>
       <div class="r-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -696,8 +109,8 @@ footer{
       <p>涵盖预训练到微调、RLHF 到 LoRA，分享分布式训练与高效优化的一手实践经验。</p>
       <div class="r-tags"><span class="r-tag">预训练</span><span class="r-tag">微调</span><span class="r-tag">分布式训练</span></div>
       <span class="r-link">探索 →</span>
-    </div>
-    <div class="r-card" id="card-inference" onclick="filterBy('模型推理')">
+    </a>
+    <a href="posts.html?tag=%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86" class="r-card">
       <div class="r-card-glow"></div>
       <div class="r-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -708,7 +121,7 @@ footer{
       <p>vLLM、TensorRT-LLM、ONNX Runtime — 生产级推理优化，实现低延迟、高吞吐的模型部署。</p>
       <div class="r-tags"><span class="r-tag">推理加速</span><span class="r-tag">部署优化</span><span class="r-tag">KV Cache</span></div>
       <span class="r-link">探索 →</span>
-    </div>
+    </a>
   </div>
 </section>
 
@@ -718,66 +131,46 @@ footer{
   <h2>技术栈</h2>
   <p class="tech-sub">日常 AI/ML 工作流中的核心工具</p>
   <div class="tech-grid">
-    <div class="tech-item"><span class="t-icon">&#x1f40d;</span> Python</div>
-    <div class="tech-item"><span class="t-icon">&#x1f525;</span> PyTorch</div>
-    <div class="tech-item"><span class="t-icon">&#x1f917;</span> Transformers</div>
-    <div class="tech-item"><span class="t-icon">&#x26a1;</span> vLLM</div>
-    <div class="tech-item"><span class="t-icon">&#x1f4d0;</span> TensorRT</div>
-    <div class="tech-item"><span class="t-icon">&#x2601;&#xfe0f;</span> Kubernetes</div>
-    <div class="tech-item"><span class="t-icon">&#x1f5a5;&#xfe0f;</span> CUDA</div>
-    <div class="tech-item"><span class="t-icon">&#x1f4ca;</span> MLflow</div>
-    <div class="tech-item"><span class="t-icon">&#x1f9ea;</span> W&B</div>
-    <div class="tech-item"><span class="t-icon">&#x1f527;</span> Docker</div>
-    <div class="tech-item"><span class="t-icon">&#x1f916;</span> DeepSpeed</div>
-    <div class="tech-item"><span class="t-icon">&#x2699;&#xfe0f;</span> ONNX</div>
+    <div class="tech-item"><span class="t-icon">🐍</span> Python</div>
+    <div class="tech-item"><span class="t-icon">🔥</span> PyTorch</div>
+    <div class="tech-item"><span class="t-icon">🤗</span> Transformers</div>
+    <div class="tech-item"><span class="t-icon">⚡</span> vLLM</div>
+    <div class="tech-item"><span class="t-icon">📐</span> TensorRT</div>
+    <div class="tech-item"><span class="t-icon">☁️</span> Kubernetes</div>
+    <div class="tech-item"><span class="t-icon">🖥️</span> CUDA</div>
+    <div class="tech-item"><span class="t-icon">📊</span> MLflow</div>
+    <div class="tech-item"><span class="t-icon">🧪</span> W&B</div>
+    <div class="tech-item"><span class="t-icon">🔧</span> Docker</div>
+    <div class="tech-item"><span class="t-icon">🤖</span> DeepSpeed</div>
+    <div class="tech-item"><span class="t-icon">⚙️</span> ONNX</div>
   </div>
 </section>
 
-<!-- ═══ POSTS ═══ -->
-<div class="posts-wrap" id="posts">
-  <main class="p-list" role="main">
+<!-- ═══ LATEST POSTS ═══ -->
+<div class="posts-wrap" style="padding-top:20px">
+  <main class="p-list">
     <div class="posts-header">
-      <h2>&#x1f4dd; 最新文章</h2>
-      <span class="post-count" id="post-count">0</span>
+      <h2>📝 最新文章</h2>
+      <a href="posts.html" style="font-size:.8125rem;color:var(--copper-light);font-weight:500;font-family:var(--font-mono)">查看全部 →</a>
     </div>
-
-    <div class="filters">
-      <div class="f-search">
-        <span class="s-icon">&#x1f50d;</span>
-        <input type="text" id="search-input" placeholder="搜索文章..." aria-label="搜索文章">
-      </div>
-      <div class="f-active" id="f-active" style="display:none">
-        <span id="f-label"></span>
-        <button class="f-clear" id="f-clear">&#x2715;</button>
-      </div>
-      <div class="f-tags" id="f-tags"></div>
-    </div>
-
-    <div id="p-container">
-      <div class="p-loading"><div class="spinner"></div><p style="margin-top:8px;font-size:.8125rem">加载中...</p></div>
-    </div>
+    <div id="recent-posts-list"></div>
   </main>
-
   <aside class="sidebar" role="complementary">
     <div class="s-card">
-      <div class="s-card-hd">&#x1f464; 关于</div>
+      <div class="s-card-hd">👤 关于</div>
       <div class="s-card-bd s-about">
         <div class="s-avatar">L</div>
         <p>AI/ML 工程师，专注于主流模型架构、模型训练技术和推理优化。</p>
         <p>分享大规模深度学习的一线实践经验。</p>
         <div class="s-stats">
-          <div class="s-stat"><span class="s-stat-num" id="s-posts">0</span><span class="s-stat-lbl">文章</span></div>
-          <div class="s-stat"><span class="s-stat-num" id="s-tags-count">0</span><span class="s-stat-lbl">标签</span></div>
+          <div class="s-stat"><span class="s-stat-num" id="s-posts">7</span><span class="s-stat-lbl">文章</span></div>
+          <div class="s-stat"><span class="s-stat-num" id="s-tags-count">8</span><span class="s-stat-lbl">标签</span></div>
         </div>
       </div>
     </div>
     <div class="s-card">
-      <div class="s-card-hd">&#x1f3f7;&#xfe0f; 标签</div>
+      <div class="s-card-hd">🏷️ 标签</div>
       <div class="s-card-bd"><div class="s-tags" id="s-tags"></div></div>
-    </div>
-    <div class="s-card">
-      <div class="s-card-hd">&#x1f4c4; 最近文章</div>
-      <div class="s-card-bd" id="s-recent"></div>
     </div>
   </aside>
 </div>
@@ -787,209 +180,43 @@ footer{
   <div class="ft-inner">
     <div class="ft-left">
       <span class="ft-brand">Lsilense Blog</span>
-      <p>&copy; 2026 &middot; 基于 GitHub Pages 构建</p>
+      <p>&copy; 2026 · 基于 GitHub Pages 构建</p>
     </div>
     <ul class="ft-links">
-      <li><a href="#research">研究</a></li>
-      <li><a href="#tech">技术栈</a></li>
-      <li><a href="#posts">文章</a></li>
+      <li><a href="research.html">研究</a></li>
+      <li><a href="tech-stack.html">技术栈</a></li>
+      <li><a href="posts.html">文章</a></li>
       <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
     </ul>
   </div>
 </footer>
 
-<!-- ═══ MODAL ═══ -->
-<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="文章详情">
-  <article class="modal">
-    <div class="modal-hd">
-      <div class="m-title">
-        <h2 id="m-title"></h2>
-        <div class="modal-meta"><span id="m-date"></span><span class="m-tags" id="m-tags"></span></div>
-      </div>
-      <button class="modal-close" id="modal-close" aria-label="关闭">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
-      </button>
-    </div>
-    <div class="modal-body" id="m-body"></div>
-    <div class="modal-ft">
-      <button class="share-btn" id="share-btn">&#x1f4cb; 复制链接</button>
-    </div>
-  </article>
-</div>
-
+<script src="js/main.js"></script>
 <script>
-(function(){
-'use strict';
-
-let posts=[];
-let filter={tag:null,search:''};
-let timer=null;
-let currentPostId=null;
-
-const $=id=>document.getElementById(id);
-const c=pContainer=$('p-container'),cCount=$('post-count'),sIn=$('search-input');
-const fTags=$('f-tags'),sTags=$('s-tags'),sRecent=$('s-recent');
-const mo=$('modal-overlay'),mc=$('modal-close'),mT=$('m-title'),mD=$('m-date'),mTa=$('m-tags'),mB=$('m-body');
-const sP=$('s-posts'),sT=$('s-tags-count'),hP=$('h-posts'),hT=$('h-tags');
-const fActive=$('f-active'),fLabel=$('f-label'),fClear=$('f-clear');
-
-function fmt(d){return new Date(d).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})}
-function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
-function allTags(){const s=new Set;posts.forEach(p=>p.tags.forEach(t=>s.add(t)));return[...s].sort()}
-
-async function load(){
-  c.innerHTML='<div class="p-loading"><div class="spinner"></div><p style="margin-top:8px;font-size:.8125rem">加载中...</p></div>';
+// Load tags and recent posts
+(async function(){
   try{
-    const r=await fetch('posts.json');
-    if(!r.ok)throw Error('fail');
-    posts=await r.json();
-    render();
-  }catch(e){
-    c.innerHTML='<div class="empty-state"><div class="e-icon">&#x1f4dd;</div><h3>暂无文章</h3><p>敬请期待。</p></div>';
-  }
-}
-
-function render(){renderTags();renderSideTags();renderRecent();renderPosts();updateStats()}
-
-function renderPosts(){
-  const f=getFiltered();
-  cCount.textContent=f.length+' 篇文章';
-  if(!f.length){c.innerHTML='<div class="empty-state"><div class="e-icon">&#x1f50d;</div><h3>没有找到文章</h3><p>试试其他筛选条件。</p></div>';return}
-  c.innerHTML=f.map((p,i)=>`
-    <article class="post-card" data-id="${esc(p.id)}" style="animation-delay:${i*.05}s">
-      <div class="p-date">&#x1f4c5; ${fmt(p.date)}</div>
-      <h3>${esc(p.title)}</h3>
-      <p class="p-excerpt">${esc(p.excerpt)}</p>
-      <div class="p-tags">${p.tags.map(t=>'<span class="p-tag" data-t="'+esc(t)+'">'+esc(t)+'</span>').join('')}</div>
-    </article>`).join('');
-  c.querySelectorAll('.post-card').forEach(el=>{el.addEventListener('click',()=>{const p=posts.find(x=>x.id===el.dataset.id);if(p)open(p)})});
-  c.querySelectorAll('.p-tag').forEach(el=>{el.addEventListener('click',e=>{e.stopPropagation();setFilter(el.dataset.t)})});
-}
-
-function renderTags(){
-  const a=allTags();
-  fTags.innerHTML='<button class="f-tag'+(filter.tag?'':' active')+'" data-t="">全部</button>'+
-    a.map(t=>'<button class="f-tag'+(filter.tag===t?' active':'')+'" data-t="'+esc(t)+'">'+esc(t)+'</button>').join('');
-  fTags.querySelectorAll('.f-tag').forEach(b=>{b.addEventListener('click',()=>{setFilter(b.dataset.t||null)})});
-}
-
-function renderSideTags(){
-  sTags.innerHTML=allTags().map(t=>'<span class="s-tag" data-t="'+esc(t)+'">'+esc(t)+'</span>').join('');
-  sTags.querySelectorAll('.s-tag').forEach(el=>{el.addEventListener('click',()=>{setFilter(el.dataset.t)})});
-}
-
-function renderRecent(){
-  const s=[...posts].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
-  sRecent.innerHTML=s.map(p=>'<div class="s-recent-item"><a href="#" data-id="'+esc(p.id)+'">'+esc(p.title)+'</a><div class="s-recent-date">'+fmt(p.date)+'</div></div>').join('');
-  sRecent.querySelectorAll('a[data-id]').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();const p=posts.find(x=>x.id===a.dataset.id);if(p)open(p)})});
-}
-
-function updateStats(){
-  const n=posts.length,all=allTags().length;
-  if(sP)sP.textContent=n;
-  if(sT)sT.textContent=all;
-  if(hP)hP.textContent=n;
-  if(hT)hT.textContent=all;
-}
-
-function getFiltered(){
-  return posts.filter(p=>{
-    if(filter.tag&&!p.tags.includes(filter.tag))return 0;
-    if(filter.search){const q=filter.search.toLowerCase();return p.title.toLowerCase().includes(q)||p.excerpt.toLowerCase().includes(q)||p.tags.some(t=>t.toLowerCase().includes(q))}
-    return 1;
-  });
-}
-
-// Expose globally
-window.filterBy=function(tag){setFilter(tag);document.querySelector('.p-list').scrollIntoView({behavior:'smooth'})};
-
-function setFilter(tag){
-  filter.tag=tag;filter.search='';
-  if(sIn)sIn.value='';
-  if(fActive&&fLabel){
-    if(tag){fActive.style.display='inline-flex';fLabel.textContent=tag}
-    else fActive.style.display='none'
-  }
-  render();
-  // update active class on nav
-}
-function handleSearch(v){
-  clearTimeout(timer);
-  timer=setTimeout(()=>{
-    filter.search=v;filter.tag=null;
-    if(fActive)fActive.style.display='none';
-    render();
-  },200);
-}
-
-function open(post){
-  currentPostId=post.id;
-  mT.textContent=post.title;
-  mD.innerHTML='&#x1f4c5; '+fmt(post.date);
-  mTa.innerHTML=post.tags.map(t=>'<span class="p-tag" style="font-size:.6875rem">'+esc(t)+'</span>').join('');
-  mB.innerHTML=post.content;
-  mo.classList.add('active');
-  document.body.style.overflow='hidden';
-  history.pushState(null,'','?post='+post.id);
-}
-
-function closeModal(){
-  mo.classList.remove('active');
-  document.body.style.overflow='';
-  history.pushState(null,'',window.location.pathname);
-}
-
-// Share
-$('share-btn').addEventListener('click',()=>{
-  if(!currentPostId)return;
-  const u=window.location.origin+window.location.pathname+'?post='+currentPostId;
-  navigator.clipboard.writeText(u).then(()=>{$('share-btn').textContent='&#x2705; 已复制！';setTimeout(()=>{$('share-btn').textContent='&#x1f4cb; 复制链接'},2000)});
-});
-
-// Events
-mc.addEventListener('click',closeModal);
-mo.addEventListener('click',e=>{if(e.target===mo)closeModal()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mo.classList.contains('active'))closeModal()});
-
-// Mobile menu
-$('mobile-btn').addEventListener('click',()=>{$('nav-links').classList.toggle('open')});
-$('nav-links').querySelectorAll('a').forEach(a=>{a.addEventListener('click',()=>{$('nav-links').classList.remove('open')})});
-
-// Search
-if(sIn)sIn.addEventListener('input',e=>handleSearch(e.target.value));
-
-// Clear filter
-if(fClear)fClear.addEventListener('click',()=>setFilter(null));
-
-// Nav scroll effect
-window.addEventListener('scroll',()=>{
-  const n=document.querySelector('nav');
-  n.classList.toggle('scrolled',window.scrollY>20);
-});
-
-// Theme toggle
-$('theme-btn').addEventListener('click',()=>{
-  // just toggle an attribute for demo — dark-only, but keeps the button functional
-  const h=document.documentElement;
-  const c=h.getAttribute('data-theme');
-  h.setAttribute('data-theme',c==='light'?'dark':'light');
-  // Not fully implemented; keep dark as default
-});
-
-// Init
-document.addEventListener('DOMContentLoaded',()=>{
-  load();
-  window.addEventListener('popstate',()=>{if(mo.classList.contains('active'))closeModal()});
-  const p=new URLSearchParams(window.location.search).get('post');
-  if(p){
-    const ch=setInterval(()=>{
-      const po=posts.find(x=>x.id===p);
-      if(po){clearInterval(ch);open(po)}
-    },200);
-    setTimeout(()=>clearInterval(ch),1e4);
-  }
-});
-
+    var r=await fetch('posts.json');
+    if(!r.ok)throw Error();
+    var posts=await r.json();
+    // Tags
+    var tags=new Set();
+    posts.forEach(function(p){p.tags.forEach(function(t){tags.add(t)})});
+    var sorted=[...tags].sort();
+    var tagsEl=document.getElementById('s-tags');
+    tagsEl.innerHTML=sorted.map(function(t){return '<a href="posts.html?tag='+encodeURIComponent(t)+'" class="s-tag">'+t+'</a>'}).join('');
+    // Recent 3 posts
+    var recent=posts.sort(function(a,b){return new Date(b.date)-new Date(a.date)}).slice(0,3);
+    var listEl=document.getElementById('recent-posts-list');
+    listEl.innerHTML=recent.map(function(p){
+      return '<article class="post-card" onclick="location.href=\'posts/'+p.id+'.html\'">'+
+        '<div class="p-date">📅 '+new Date(p.date).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})+'</div>'+
+        '<h3>'+p.title+'</h3>'+
+        '<p class="p-excerpt">'+p.excerpt+'</p>'+
+        '<div class="p-tags">'+p.tags.map(function(t){return '<span class="p-tag">'+t+'</span>'}).join('')+'</div>'+
+        '</article>'
+    }).join('');
+  }catch(e){}
 })();
 </script>
 </body>

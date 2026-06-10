@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>研究方向 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">首页</a></li><li><a href="research.html" class="active">研究方向</a></li>
+        <li><a href="tech-stack.html">技术栈</a></li><li><a href="posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hd">
+  <div class="page-label">研究方向</div>
+  <h1>研究领域</h1>
+  <p>驱动 AI 研究的三大核心方向，持续探索模型能力边界</p>
+</div>
+
+<div class="r-detail-wrap">
+  <div class="r-detail-grid">
+    <div class="r-detail-card">
+      <h3>主流模型</h3>
+      <p>深入研究 GPT、LLaMA、Claude、Gemini 等主流大语言模型的架构设计，分析注意力机制、MOE 架构、多模态融合等核心技术。</p>
+      <ul class="r-detail-list">
+        <li>Transformer 架构演进与变体</li>
+        <li>多模态大模型（VLM）设计与训练</li>
+        <li>MOE（混合专家）模型架构分析</li>
+        <li>长上下文窗口技术（RoPE、ALiBi）</li>
+        <li>模型压缩与知识蒸馏</li>
+      </ul>
+      <a href="posts.html?tag=%E4%B8%BB%E6%B5%81%E6%A8%A1%E5%9E%8B" class="r-detail-link">查看相关文章 →</a>
+    </div>
+    <div class="r-detail-card">
+      <h3>模型训练</h3>
+      <p>从预训练到指令微调，从 RLHF 到高效参数微调（LoRA/QLoRA），分享大规模分布式训练的最佳实践和工程经验。</p>
+      <ul class="r-detail-list">
+        <li>大规模预训练（Pre-training）策略</li>
+        <li>指令微调（SFT）与数据构建</li>
+        <li>RLHF / DPO 对齐训练</li>
+        <li>LoRA / QLoRA 参数高效微调</li>
+        <li>分布式训练（FSDP / DeepSpeed）</li>
+      </ul>
+      <a href="posts.html?tag=%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83" class="r-detail-link">查看相关文章 →</a>
+    </div>
+    <div class="r-detail-card">
+      <h3>模型推理</h3>
+      <p>探索 vLLM、TensorRT-LLM、ONNX Runtime 等推理加速框架，优化 KV Cache 管理、量化推理和部署架构。</p>
+      <ul class="r-detail-list">
+        <li>PagedAttention 与 KV Cache 优化</li>
+        <li>模型量化（FP8/INT8/INT4）</li>
+        <li>推理服务架构设计（vLLM / TGI）</li>
+        <li>TensorRT-LLM 编译优化</li>
+        <li>生产部署与弹性伸缩</li>
+      </ul>
+      <a href="posts.html?tag=%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86" class="r-detail-link">查看相关文章 →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="research.html">研究</a></li><li><a href="tech-stack.html">技术栈</a></li>
+      <li><a href="posts.html">文章</a></li><li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+<script src="js/main.js"></script>
+</body>
+</html>

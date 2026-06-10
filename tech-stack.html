@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>技术栈 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+.tc-cat{margin-bottom:48px}
+.tc-cat:last-child{margin-bottom:0}
+.tc-cat h3{margin-bottom:16px}
+.tc-item-desc{display:block;font-size:.75rem;color:var(--text3);margin-top:4px;font-weight:400}
+</style>
+</head>
+<body>
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">首页</a></li><li><a href="research.html">研究方向</a></li>
+        <li><a href="tech-stack.html" class="active">技术栈</a></li><li><a href="posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hd">
+  <div class="page-label">工具链</div>
+  <h1>技术栈</h1>
+  <p>日常 AI/ML 工作流中的核心工具与框架</p>
+</div>
+
+<div class="r-detail-wrap">
+  <div class="tc-cat">
+    <h3>深度学习框架</h3>
+    <div class="tech-grid" style="justify-content:flex-start">
+      <div class="tech-item"><span class="t-icon">🔥</span> PyTorch <span class="tc-item-desc" style="display:inline;margin-left:6px">主力训练框架</span></div>
+      <div class="tech-item"><span class="t-icon">🤗</span> Transformers <span class="tc-item-desc" style="display:inline;margin-left:6px">模型库与训练工具</span></div>
+      <div class="tech-item"><span class="t-icon">🤖</span> DeepSpeed <span class="tc-item-desc" style="display:inline;margin-left:6px">分布式训练</span></div>
+      <div class="tech-item"><span class="t-icon">⚡</span> FSDP <span class="tc-item-desc" style="display:inline;margin-left:6px">完全分片数据并行</span></div>
+      <div class="tech-item"><span class="t-icon">🐍</span> JAX <span class="tc-item-desc" style="display:inline;margin-left:6px">高性能计算</span></div>
+    </div>
+  </div>
+  <div class="tc-cat">
+    <h3>推理加速</h3>
+    <div class="tech-grid" style="justify-content:flex-start">
+      <div class="tech-item"><span class="t-icon">⚡</span> vLLM <span class="tc-item-desc" style="display:inline;margin-left:6px">LLM 推理服务</span></div>
+      <div class="tech-item"><span class="t-icon">📐</span> TensorRT-LLM <span class="tc-item-desc" style="display:inline;margin-left:6px">NVIDIA 推理优化</span></div>
+      <div class="tech-item"><span class="t-icon">⚙️</span> ONNX Runtime <span class="tc-item-desc" style="display:inline;margin-left:6px">跨平台推理</span></div>
+      <div class="tech-item"><span class="t-icon">🔮</span> TGI <span class="tc-item-desc" style="display:inline;margin-left:6px">HuggingFace 推理</span></div>
+      <div class="tech-item"><span class="t-icon">🎯</span> FlashAttention <span class="tc-item-desc" style="display:inline;margin-left:6px">注意力加速</span></div>
+    </div>
+  </div>
+  <div class="tc-cat">
+    <h3>基础设施</h3>
+    <div class="tech-grid" style="justify-content:flex-start">
+      <div class="tech-item"><span class="t-icon">🖥️</span> CUDA <span class="tc-item-desc" style="display:inline;margin-left:6px">GPU 计算</span></div>
+      <div class="tech-item"><span class="t-icon">☁️</span> Kubernetes <span class="tc-item-desc" style="display:inline;margin-left:6px">容器编排</span></div>
+      <div class="tech-item"><span class="t-icon">🔧</span> Docker <span class="tc-item-desc" style="display:inline;margin-left:6px">容器化</span></div>
+      <div class="tech-item"><span class="t-icon">📦</span> Slurm <span class="tc-item-desc" style="display:inline;margin-left:6px">集群调度</span></div>
+    </div>
+  </div>
+  <div class="tc-cat">
+    <h3>实验与监控</h3>
+    <div class="tech-grid" style="justify-content:flex-start">
+      <div class="tech-item"><span class="t-icon">📊</span> MLflow <span class="tc-item-desc" style="display:inline;margin-left:6px">实验管理</span></div>
+      <div class="tech-item"><span class="t-icon">🧪</span> W&B <span class="tc-item-desc" style="display:inline;margin-left:6px">实验跟踪</span></div>
+      <div class="tech-item"><span class="t-icon">📈</span> Prometheus <span class="tc-item-desc" style="display:inline;margin-left:6px">监控告警</span></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="research.html">研究</a></li><li><a href="tech-stack.html">技术栈</a></li>
+      <li><a href="posts.html">文章</a></li><li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+<script src="js/main.js"></script>
+</body>
+</html>
