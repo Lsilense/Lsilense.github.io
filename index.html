@@ -38,6 +38,7 @@
 
 <!-- ═══ HERO ═══ -->
 <section class="hero">
+  <div class="hero-deco">L</div>
   <div class="hero-inner">
     <div class="hero-text">
       <div class="hero-badge"><span></span>AI / ML 研究员</div>
@@ -48,9 +49,9 @@
         记录在主流模型架构、训练技术和生产部署中的实践经验与思考。
       </p>
       <div class="hero-stats">
-        <div><span class="hero-stat-value" id="h-posts">7</span><span class="hero-stat-label">文章</span></div>
+        <div><span class="hero-stat-value" id="h-posts">0</span><span class="hero-stat-label">文章</span></div>
         <div><span class="hero-stat-value">3</span><span class="hero-stat-label">研究方向</span></div>
-        <div><span class="hero-stat-value" id="h-tags">8</span><span class="hero-stat-label">标签</span></div>
+        <div><span class="hero-stat-value" id="h-tags">0</span><span class="hero-stat-label">标签</span></div>
       </div>
       <div class="hero-btns">
         <a href="https://github.com/Lsilense" target="_blank" class="btn btn-primary">
@@ -59,24 +60,6 @@
         </a>
         <a href="posts.html" class="btn btn-secondary">浏览文章</a>
       </div>
-    </div>
-    <div class="terminal">
-      <div class="terminal-bar">
-        <span></span><span></span><span></span>
-        <span class="terminal-label">model_config.py</span>
-      </div>
-      <pre><span class="term-comment"># Lsilense/awesome-model</span>
-<span class="term-key">model</span> = <span class="term-func">load_model</span>(
-    <span class="term-arg">name</span>=<span class="term-str">"Lsilense/research"</span>,
-    <span class="term-arg">precision</span>=<span class="term-str">"bf16"</span>,
-    <span class="term-arg">device</span>=<span class="term-str">"cuda"</span>
-)
-<span class="term-key">output</span> = model.<span class="term-func">generate</span>(
-    <span class="term-arg">input_ids</span>=input_ids,
-    <span class="term-arg">max_length</span>=<span class="term-num">4096</span>,
-    <span class="term-arg">temperature</span>=<span class="term-num">0.7</span>
-)
-<span class="term-comment"># Output: 探索 AI...</span></pre>
     </div>
   </div>
 </section>
@@ -148,32 +131,18 @@
 </section>
 
 <!-- ═══ LATEST POSTS ═══ -->
-<div class="posts-wrap" style="padding-top:20px">
-  <main class="p-list">
-    <div class="posts-header">
-      <h2>📝 最新文章</h2>
-      <a href="posts.html" style="font-size:.8125rem;color:var(--copper-light);font-weight:500;font-family:var(--font-mono)">查看全部 →</a>
-    </div>
-    <div id="recent-posts-list"></div>
-  </main>
-  <aside class="sidebar" role="complementary">
-    <div class="s-card">
-      <div class="s-card-hd">👤 关于</div>
-      <div class="s-card-bd s-about">
-        <div class="s-avatar">L</div>
-        <p>AI/ML 工程师，专注于主流模型架构、模型训练技术和推理优化。</p>
-        <p>分享大规模深度学习的一线实践经验。</p>
-        <div class="s-stats">
-          <div class="s-stat"><span class="s-stat-num" id="s-posts">7</span><span class="s-stat-lbl">文章</span></div>
-          <div class="s-stat"><span class="s-stat-num" id="s-tags-count">8</span><span class="s-stat-lbl">标签</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="s-card">
-      <div class="s-card-hd">🏷️ 标签</div>
-      <div class="s-card-bd"><div class="s-tags" id="s-tags"></div></div>
-    </div>
-  </aside>
+<div class="home-posts">
+  <div class="posts-header">
+    <h2>最新文章</h2>
+    <a href="posts.html" style="font-size:.8125rem;color:var(--copper-light);font-weight:500;font-family:var(--font-mono)">查看全部 →</a>
+  </div>
+  <div id="recent-posts-list" class="p-empty" style="display:none">
+    <div class="p-empty-icon">📝</div>
+    <h3>还没有文章</h3>
+    <p>即将发布精彩内容，敬请期待</p>
+    <a href="posts.html" class="p-empty-cta">去看看 →</a>
+  </div>
+  <div id="recent-posts-items"></div>
 </div>
 
 <!-- ═══ FOOTER ═══ -->
@@ -194,29 +163,38 @@
 
 <script src="js/main.js"></script>
 <script>
-// Load tags and recent posts
 (async function(){
   try{
-    var r=await fetch('posts.json');
+    var r=await fetch('posts.json?v='+Date.now());
     if(!r.ok)throw Error();
     var posts=await r.json();
+    var count=posts.length;
+    var hPosts=document.getElementById('h-posts');
+    var emptyEl=document.getElementById('recent-posts-list');
+    var itemsEl=document.getElementById('recent-posts-items');
+    if(hPosts)hPosts.textContent=count;
+    if(count===0){
+      if(emptyEl)emptyEl.style.display='block';
+      return;
+    }
+    if(emptyEl)emptyEl.style.display='none';
     // Tags
     var tags=new Set();
     posts.forEach(function(p){p.tags.forEach(function(t){tags.add(t)})});
-    var sorted=[...tags].sort();
-    var tagsEl=document.getElementById('s-tags');
-    tagsEl.innerHTML=sorted.map(function(t){return '<a href="posts.html?tag='+encodeURIComponent(t)+'" class="s-tag">'+t+'</a>'}).join('');
-    // Recent 3 posts
+    var hTags=document.getElementById('h-tags');
+    if(hTags)hTags.textContent=tags.size;
+    // Recent posts
     var recent=posts.sort(function(a,b){return new Date(b.date)-new Date(a.date)}).slice(0,3);
-    var listEl=document.getElementById('recent-posts-list');
-    listEl.innerHTML=recent.map(function(p){
-      return '<article class="post-card" onclick="location.href=\'posts/'+p.id+'.html\'">'+
-        '<div class="p-date">📅 '+new Date(p.date).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})+'</div>'+
-        '<h3>'+p.title+'</h3>'+
-        '<p class="p-excerpt">'+p.excerpt+'</p>'+
-        '<div class="p-tags">'+p.tags.map(function(t){return '<span class="p-tag">'+t+'</span>'}).join('')+'</div>'+
-        '</article>'
-    }).join('');
+    if(itemsEl){
+      itemsEl.innerHTML=recent.map(function(p){
+        return '<article class="post-card" onclick="location.href=\'posts/'+p.id+'.html\'">'+
+          '<div class="p-date">📅 '+new Date(p.date).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})+'</div>'+
+          '<h3>'+p.title+'</h3>'+
+          '<p class="p-excerpt">'+p.excerpt+'</p>'+
+          '<div class="p-tags">'+p.tags.map(function(t){return '<span class="p-tag">'+t+'</span>'}).join('')+'</div>'+
+          '</article>'
+      }).join('');
+    }
   }catch(e){}
 })();
 </script>

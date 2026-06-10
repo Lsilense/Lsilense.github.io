@@ -106,7 +106,7 @@ if(urlTag)filter.tag=urlTag;
 async function load(){
   c.innerHTML='<div class="p-loading"><div class="spinner"></div><p style="margin-top:8px;font-size:.8125rem">加载中...</p></div>';
   try{
-    var r=await fetch('posts.json');
+    var r=await fetch('posts.json?v='+Date.now());
     if(!r.ok)throw Error('fail');
     posts=await r.json();
     render();
