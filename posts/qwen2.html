@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Qwen2 系列模型解读 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>Qwen2 系列模型解读：架构演进与训练策略</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 5 月 20 日</span>
+      <span>🏷️ <a href="../posts.html?tag=Qwen" style="color:var(--copper-light)">Qwen</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>Qwen2 是阿里巴巴通义千问团队推出的新一代大语言模型系列，涵盖从 0.5B 到 72B 等多种参数规模的模型。Qwen2 在架构设计、训练数据和长上下文能力方面均有显著提升，成为开源社区中极具竞争力的模型系列。本文将从技术角度解读 Qwen2 的核心技术特性。</p>
+
+<h2>架构演进</h2>
+<p>Qwen2 基于 Qwen1 的架构进行了多项关键改进，整体采用 Decoder-only Transformer 架构，并引入了多项现代 LLM 的最佳实践。</p>
+
+<h3>SwiGLU 激活函数</h3>
+<p>Qwen2 在 FFN 层中使用 SwiGLU（Swish-Gated Linear Unit）替代了传统的 ReLU 或 GELU 激活函数。SwiGLU 通过门控机制增强了网络的表达能力，在相同参数预算下通常能取得更好的性能。</p>
+
+<pre><code>class SwiGLU(nn.Module):
+    def forward(self, x):
+        x, gate = x.chunk(2, dim=-1)
+        return x * F.silu(gate)  # SwiGLU 实现</code></pre>
+
+<h3>Grouped Query Attention (GQA)</h3>
+<p>Qwen2 全面采用了 GQA 机制，这是对 Multi-Query Attention (MQA) 的泛化。通过在 Query 头和 Key/Value 头之间建立分组映射，GQA 在推理效率和模型质量之间取得了更好的平衡。</p>
+
+<ul>
+  <li>Qwen2-72B 使用 60 个 Query 头，每组对应 1 个 Key/Value 头（GQA-1/60）</li>
+  <li>相比标准 MHA，GQA 将 KV Cache 大小降低约 4-8 倍</li>
+  <li>相比 MQA，GQA 保留了更多的 Key/Value 多样性，有利于模型质量</li>
+</ul>
+
+<h3>RMS Norm</h3>
+<p>Qwen2 使用 RMS Norm（Root Mean Square Layer Normalization）替代 Layer Norm，其计算更高效且在实践中表现优异。RM Norm 仅对输入进行均方根归一化，移除了 Layer Norm 中的均值中心化步骤，减少了计算开销。</p>
+
+<h2>预训练策略</h2>
+<h3>数据规模与质量</h3>
+<p>Qwen2 在超过 3 万亿 Token 的高质量数据上进行预训练。数据涵盖多语言语料（中文、英文为主），经过严格的清洗、去重和质量筛选。团队采用了基于模型的数据质量评分策略，自动过滤低质量内容。</p>
+
+<h3>分词器优化</h3>
+<p>Qwen2 使用优化后的分词器，词汇表大小约为 152K。相比 Qwen1，分词器对中文和代码场景进行了针对性优化，显著降低了平均编码长度，提高了处理效率。</p>
+
+<h2>长上下文扩展</h2>
+<p>Qwen2 在长上下文处理方面取得了重要突破：</p>
+
+<h3>YaRN 位置编码</h3>
+<p>Qwen2 采用 YaRN（Yet another RoPE extensioN）方法扩展上下文窗口。YaRN 在 RoPE（Rotary Position Embedding）的基础上，通过调整频率和增加温度参数，实现了高效的上下文窗口扩展，而无需进行长时间的继续预训练。</p>
+
+<pre><code># YaRN 位置插值示意
+def yarn_rotate(x, position_ids, scale, temperature):
+    # 根据缩放因子和温度调整旋转频率
+    freqs = compute_freqs(x.shape[-1])
+    freqs = freqs * scale  # 频率缩放
+    # 温度参数调整注意力分布的熵
+    cos, sin = apply_temperature(freqs, temperature)
+    return apply_rotary(x, position_ids, cos, sin)</code></pre>
+
+<p>通过 YaRN，Qwen2 的上下文窗口从训练时的 4K/8K 成功扩展到 128K，在长文档理解和摘要任务上表现优异。</p>
+
+<h2>对齐与微调</h2>
+<p>Qwen2 系列经历了多阶段的对齐训练：</p>
+<ul>
+  <li><strong>指令微调</strong>：使用大规模指令数据集进行监督微调，涵盖数学推理、代码生成、角色扮演等场景</li>
+  <li><strong>偏好对齐</strong>：基于 DPO（Direct Preference Optimization）进行偏好对齐，提升模型输出的有用性和安全性</li>
+  <li><strong>多轮对话优化</strong>：针对聊天场景进行专门优化，提升多轮对话的一致性和连贯性</li>
+</ul>
+
+<h2>总结</h2>
+<p>Qwen2 系列通过引入 SwiGLU、GQA、RMS Norm 等现代架构设计，结合大规模高质量预训练和精细化的对齐策略，构建了一个性能优异的开源模型系列。其在编程、数学推理和多语言任务上的出色表现，使其成为 LLM 技术栈中的重要选择。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">Qwen</span>
+      <span class="p-tag">训练</span>
+      <span class="p-tag">GQA</span>
+      <span class="p-tag">长上下文</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

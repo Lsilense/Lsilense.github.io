@@ -1,18 +1,16 @@
 [
   {
-    "id": "deepseek-architecture-analysis",
-    "title": "DeepSeek 架构深度解析：开源 MOE 的突破之路",
-    "date": "2026-06-10",
-    "tags": ["主流模型", "LLM"],
-    "excerpt": "深入分析 DeepSeek 系列模型的 MOE 架构设计，解读 MLA 注意力机制和开源策略如何推动大模型民主化。",
-    "content": "<h2>DeepSeek 的开源之路</h2><p>DeepSeek 系列模型以其出色的开源策略和技术创新，成为大模型领域不可忽视的力量。从 DeepSeek-V2 到 DeepSeek-V3，每一代都在架构上带来了突破性改进。</p><h2>MOE 架构创新</h2><p>DeepSeek 采用了混合专家（MOE）架构，通过稀疏激活机制在保持推理效率的同时大幅扩展模型容量。其细粒度专家分割和动态路由策略是性能提升的关键。</p><h2>MLA：Multi-head Latent Attention</h2><p>DeepSeek 提出的 MLA（Multi-head Latent Attention）机制，通过低秩压缩大幅降低 KV Cache 的显存占用，使得长上下文推理更加高效。</p><pre><code># MLA 核心思想示例\nclass MultiHeadLatentAttention(nn.Module):\n    def __init__(self, d_model, n_heads, latent_dim):\n        super().__init__()\n        self.q_proj = nn.Linear(d_model, latent_dim)\n        self.k_proj = nn.Linear(d_model, latent_dim)\n        self.v_proj = nn.Linear(d_model, latent_dim)\n        self.out_proj = nn.Linear(latent_dim, d_model)\n    \n    def forward(self, x):\n        # 低秩投影到潜在空间\n        q = self.q_proj(x)\n        k = self.k_proj(x)\n        v = self.v_proj(x)\n        # 在低维空间计算注意力\n        attn = scaled_dot_product(q, k)\n        return self.out_proj(attn @ v)</code></pre><h2>训练效率与 Scaling</h2><p>DeepSeek 在训练效率上也做出了大量优化，包括 FP8 混合精度训练、流水线并行调度和高效的通信拓扑设计，使得超大规模 MOE 模型的训练成为可能。</p>"
+    "id": "deepseek",
+    "title": "DeepSeek 模型架构解析：MoE 与 MLA 的创新实践",
+    "date": "2026-05-15",
+    "excerpt": "深入解析 DeepSeek 系列模型的 MoE（混合专家）架构与 MLA（Multi-head Latent Attention）机制，探讨其如何在保持高性能的同时实现极致的推理效率。",
+    "tags": ["主流模型", "DeepSeek", "MoE", "推理优化"]
   },
   {
-    "id": "qwen2-architecture-analysis",
-    "title": "Qwen2 架构详解：通义千问的长上下文与工具调用能力",
-    "date": "2026-06-09",
-    "tags": ["主流模型", "LLM"],
-    "excerpt": "全面解析 Qwen2 系列模型的架构设计，涵盖 128K 长上下文机制、SwiGLU 激活函数、高级分词器与工具调用能力。",
-    "content": "<h2>Qwen2 系列概览</h2><p>Qwen2（通义千问 2）是阿里云推出的大语言模型系列，以其出色的多语言能力、超长上下文和强大的工具调用能力受到广泛关注。系列包含从 0.5B 到 72B 多个规模，覆盖广泛的应用场景。</p><h2>长上下文：128K 上下文窗口</h2><p>Qwen2 采用了 YaRN（Yet another RoPE extensioN）方法扩展上下文窗口，在不重新训练的情况下将 RoPE 位置编码的上下文长度从 4K 扩展到 128K，同时保持模型在短上下文任务上的性能。</p><pre><code># YaRN 位置编码扩展\nfrom transformers import AutoModelForCausalLM\n\nmodel = AutoModelForCausalLM.from_pretrained(\n    'Qwen/Qwen2-7B-Instruct',\n    trust_remote_code=True\n)\n# 通过调整 RoPE 频率扩展上下文\nmodel.config.rope_scaling = {\n    'type': 'yarn',\n    'factor': 32.0,\n    'original_max_position_embeddings': 4096\n}</code></pre><h2>SwiGLU 与架构选择</h2><p>Qwen2 采用了 SwiGLU 激活函数替代传统的 ReLU，配合 RMSNorm 归一化和 Grouped-Query Attention（GQA），在保持高性能的同时降低了推理显存消耗。</p><h2>工具调用与 Function Calling</h2><p>Qwen2 在训练中特别强化了工具调用能力，支持 Function Calling、代码执行和外部 API 调用。通过格式化的指令微调数据，模型能够准确理解工具描述并生成符合规范的工具调用请求。</p>"
+    "id": "qwen2",
+    "title": "Qwen2 系列模型解读：架构演进与训练策略",
+    "date": "2026-05-20",
+    "excerpt": "全面解读 Qwen2 系列模型在架构设计、预训练策略和长上下文扩展方面的技术细节，包括 SwiGLU、GQA 等关键组件的实现分析。",
+    "tags": ["主流模型", "Qwen", "训练"]
   }
 ]

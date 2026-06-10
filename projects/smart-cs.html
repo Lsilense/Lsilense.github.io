@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智能客服系统 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html" class="active">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../projects.html" class="back-link">← 返回项目列表</a>
+  <div class="p-heading">
+    <h1>💬 智能客服系统</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月</span>
+      <span>🏷️ LLM · RAG · LangChain</span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>项目背景</h2>
+<p>传统客服系统面临响应慢、知识更新滞后、人力成本高等问题。本项目旨在基于大模型技术构建一套企业级智能客服系统，实现 7×24 小时自动应答，同时保留人工兜底机制。系统已在电商场景落地，日均处理 5000+ 对话。</p>
+
+<h2>系统架构</h2>
+<p>智能客服系统采用分层架构设计，分为接入层、理解层、知识层和响应层四个主要模块：</p>
+
+<h3>接入层</h3>
+<p>统一接入网关，支持多渠道接入（Web、微信、APP），通过 WebSocket 实现实时通信。会话管理模块负责用户身份识别、对话上下文维护和会话生命周期管理。</p>
+
+<h3>理解层</h3>
+<p>基于大模型的意图识别与情感分析模块。用户输入首先经过意图分类器，判断用户的核心诉求（售前咨询、售后问题、技术故障等）。同时进行情感分析，识别用户的急迫度和情绪状态，对高优先级对话进行标记。</p>
+
+<pre><code># 意图识别示意
+INTENT_PROMPT = """根据用户输入判断意图类别：
+- 售前咨询：产品信息、价格、规格
+- 售后问题：退换货、物流、投诉
+- 技术支持：使用问题、故障报修
+- 其他
+
+用户：{user_input}
+意图："""
+
+def classify_intent(user_input):
+    response = llm.generate(INTENT_PROMPT.format(user_input=user_input))
+    return parse_intent(response)</code></pre>
+
+<h3>知识层</h3>
+<p>知识层是系统的核心，采用 RAG（Retrieval-Augmented Generation）架构：</p>
+<ul>
+  <li><strong>向量知识库</strong>：基于 Milvus 存储 FAQ、产品文档、工单记录等向量化知识</li>
+  <li><strong>混合检索</strong>：结合向量检索与关键词检索（BM25），提升召回率</li>
+  <li><strong>知识图谱</strong>：构建产品关系图谱，支持多跳推理查询</li>
+  <li><strong>实时知识更新</strong>：运营后台可实时新增或修改知识条目，无需重新索引</li>
+</ul>
+
+<h3>响应层</h3>
+<p>基于 LangChain 构建的 LLM 推理链，包含以下组件：</p>
+<ul>
+  <li><strong>对话管理</strong>：维护多轮对话的上下文窗口，支持指代消解</li>
+  <li><strong>检索增强</strong>：从知识库检索相关信息，注入 Prompt 作为参考上下文</li>
+  <li><strong>安全过滤</strong>：基于内容安全策略过滤不当输出，支持敏感词拦截</li>
+  <li><strong>兜底机制</strong>：当模型置信度低于阈值时，自动转接人工坐席</li>
+</ul>
+
+<pre><code># LangChain 推理链示意
+from langchain.chains import RetrievalQA
+from langchain.vectorstores import Milvus
+
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=vector_store.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 5, "fetch_k": 20}
+    ),
+    return_source_documents=True
+)
+
+# 执行问答
+result = qa_chain({"query": user_input})
+answer = result["result"]
+sources = result["source_documents"]</code></pre>
+
+<h2>关键特性</h2>
+
+<h3>多轮对话</h3>
+<p>系统维护完整的对话上下文，支持上下文相关的问题追问和指代消解。例如用户问"这个多少钱"，系统能根据历史对话判断具体指向哪个商品。</p>
+
+<h3>工单自动生成</h3>
+<p>当用户问题需要线下处理时，系统自动生成标准工单，包含问题摘要、用户信息、会话记录等字段，推送到工单系统。</p>
+
+<h3>人工坐席辅助</h3>
+<p>转接人工后，系统为坐席提供实时建议回答和相关知识推荐，帮助坐席快速响应用户。坐席可直接引用或修改系统建议的答案发送给用户。</p>
+
+<h3>数据分析看板</h3>
+<p>提供实时数据看板，监控对话量、解决率、平均响应时间、用户满意度等核心指标，辅助运营决策。</p>
+
+<h2>技术栈</h2>
+<div class="p-tags">
+  <span class="p-tag" style="padding:3px 12px">LLM</span>
+  <span class="p-tag" style="padding:3px 12px">RAG</span>
+  <span class="p-tag" style="padding:3px 12px">LangChain</span>
+  <span class="p-tag" style="padding:3px 12px">FastAPI</span>
+  <span class="p-tag" style="padding:3px 12px">Milvus</span>
+  <span class="p-tag" style="padding:3px 12px">WebSocket</span>
+  <span class="p-tag" style="padding:3px 12px">Docker</span>
+  <span class="p-tag" style="padding:3px 12px">Kubernetes</span>
+</div>
+
+<h2>总结</h2>
+<p>该智能客服系统已在生产环境稳定运行，日均处理超过 5000 次对话请求，自动解决率达 75%，平均响应时间缩短至 3 秒以内。通过 RAG 架构有效解决了大模型知识更新的问题，同时人工兜底机制确保了服务质量。后续计划引入多模态能力，支持图片识别和语音交互。</p>
+
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

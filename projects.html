@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>项目经验 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+</head>
+<body>
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">首页</a></li><li><a href="research.html">核心方向</a></li>
+        <li><a href="projects.html" class="active">项目</a></li>
+        <li><a href="tech-stack.html">技术栈</a></li><li><a href="posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hd">
+  <div class="page-label">项目经验</div>
+  <h1>实战项目</h1>
+  <p>AI/ML 领域的工程实践</p>
+</div>
+
+<div class="r-detail-wrap">
+  <div class="projects-grid">
+  </div>
+</div>
+
+<script>
+(async function(){
+  try{
+    var r=await fetch('projects.json?v='+Date.now());
+    if(!r.ok)throw Error();
+    var projects=await r.json();
+    var grid=document.querySelector('.projects-grid');
+    if(!grid)return;
+    if(!projects.length){
+      grid.innerHTML='<div class="p-empty" style="grid-column:1/-1;text-align:center;padding:60px 20px"><div class="p-empty-icon">🔧</div><h3>暂无项目</h3><p>即将更新</p></div>';
+      return;
+    }
+    grid.innerHTML=projects.map(function(p){
+      return '<div class="p-card" onclick="location.href=\''+p.url+'\'" style="cursor:pointer">'+
+        '<span class="p-card-icon">'+p.icon+'</span>'+
+        '<h3>'+p.title+'</h3>'+
+        '<p>'+p.description+'</p>'+
+        '<div class="p-card-tech">'+p.tags.map(function(t){return '<span>'+t+'</span>'}).join('')+'</div>'+
+        '</div>'
+    }).join('');
+  }catch(e){}
+})();
+</script>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="research.html">研究</a></li><li><a href="projects.html">项目</a></li>
+      <li><a href="tech-stack.html">技术栈</a></li><li><a href="posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+<script src="js/main.js"></script>
+</body>
+</html>

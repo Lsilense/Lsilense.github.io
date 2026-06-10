@@ -20,6 +20,7 @@
       <ul class="nav-links" id="nav-links">
         <li><a href="index.html" class="active">首页</a></li>
         <li><a href="research.html">核心方向</a></li>
+        <li><a href="projects.html">项目</a></li>
         <li><a href="tech-stack.html">技术栈</a></li>
         <li><a href="posts.html">文章</a></li>
         <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
@@ -138,6 +139,34 @@
   </div>
 </section>
 
+<!-- ═══ PROJECTS ═══ -->
+<section class="projects" id="projects">
+  <div class="projects-label">项目经验</div>
+  <h2>实战项目</h2>
+  <p class="projects-sub">AI/ML 领域的工程实践</p>
+  <div class="projects-grid"></div>
+</section>
+
+<script>
+(async function(){
+  try{
+    var r=await fetch('projects.json?v='+Date.now());
+    if(!r.ok)throw Error();
+    var projects=await r.json();
+    var grid=document.querySelector('#projects .projects-grid');
+    if(!grid||!projects.length)return;
+    grid.innerHTML=projects.map(function(p){
+      return '<div class="p-card" onclick="location.href=\''+p.url+'\'" style="cursor:pointer">'+
+        '<span class="p-card-icon">'+p.icon+'</span>'+
+        '<h3>'+p.title+'</h3>'+
+        '<p>'+p.excerpt+'</p>'+
+        '<div class="p-card-tech">'+p.tags.slice(0,3).map(function(t){return '<span>'+t+'</span>'}).join('')+'</div>'+
+        '</div>'
+    }).join('');
+  }catch(e){}
+})();
+</script>
+
 <!-- ═══ TECH STACK ═══ -->
 <section class="tech" id="tech">
   <div class="tech-label">工具链</div>
@@ -156,6 +185,8 @@
     <div class="tech-item"><span class="t-icon">🔧</span> Docker</div>
     <div class="tech-item"><span class="t-icon">🤖</span> DeepSpeed</div>
     <div class="tech-item"><span class="t-icon">⚙️</span> ONNX</div>
+    <div class="tech-item"><span class="t-icon">🤖</span> Claude Code</div>
+    <div class="tech-item"><span class="t-icon">📝</span> Cursor</div>
   </div>
 </section>
 
@@ -183,6 +214,7 @@
     </div>
     <ul class="ft-links">
       <li><a href="research.html">研究</a></li>
+      <li><a href="projects.html">项目</a></li>
       <li><a href="tech-stack.html">技术栈</a></li>
       <li><a href="posts.html">文章</a></li>
       <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DeepSeek 模型架构解析 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>DeepSeek 模型架构解析：MoE 与 MLA 的创新实践</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 5 月 15 日</span>
+      <span>🏷️ <a href="../posts.html?tag=DeepSeek" style="color:var(--copper-light)">DeepSeek</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>DeepSeek 系列模型自发布以来，凭借其卓越的性能表现和创新的架构设计，迅速成为开源大模型领域的重要力量。本文将从模型架构视角，深入解析 DeepSeek 的核心技术——MoE（Mixture of Experts）与 MLA（Multi-head Latent Attention）机制。</p>
+
+<h2>DeepSeek MoE 架构</h2>
+<p>DeepSeek 采用混合专家（MoE）架构作为其核心设计方案。与传统密集模型不同，MoE 架构通过稀疏激活的方式，在保持模型容量的同时大幅降低计算成本。</p>
+
+<h3>路由策略</h3>
+<p>DeepSeek 实现了负载均衡的路由策略，每个 Token 被路由到 Top-2 个专家网络。路由机制基于可学习的门控网络，通过 Softmax 归一化产生专家选择概率。关键创新在于引入专家负载均衡损失（Load Balancing Loss），确保各专家被均匀使用，避免"专家坍缩"问题。</p>
+
+<pre><code># 简化的路由逻辑
+def route_token(x, router, experts, top_k=2):
+    logits = router(x)  # [d_model, num_experts]
+    probs = softmax(logits, dim=-1)
+    top_k_vals, top_k_idx = topk(probs, top_k, dim=-1)
+    # 仅激活 top-k 专家
+    output = sum(experts[i](x) * w[i] for i, w in zip(top_k_idx, top_k_vals))
+    return output</code></pre>
+
+<h3>细粒度专家分配</h3>
+<p>DeepSeek 进一步细化了专家粒度的设计方案。不同于传统 MoE 将整个 FFN 层作为一个专家，DeepSeek 采用更细粒度的专家分割策略，将 FFN 层的中间维度划分为多个独立专家，每个专家负责不同的表征子空间。这种设计使得模型可以在相同计算预算下容纳更多专家，提升模型的表达能力和知识容量。</p>
+
+<h2>MLA：Multi-head Latent Attention</h2>
+<p>MLA（Multi-head Latent Attention）是 DeepSeek 的另一项核心技术，旨在解决长上下文推理中的 KV Cache 瓶颈问题。</p>
+
+<h3>问题的起源</h3>
+<p>在标准 Transformer 中，每个解码步骤都需要缓存所有历史 Token 的 Key 和 Value 矩阵。当序列长度达到 128K 甚至 1M 时，KV Cache 的内存占用会迅速膨胀，成为推理的主要瓶颈。</p>
+
+<h3>核心思想</h3>
+<p>MLA 通过引入低秩压缩机制，将 Key 和 Value 投影到更低维的隐空间（Latent Space）中进行缓存。具体而言，对于每个注意力头，MLA 不直接缓存完整的 Key 和 Value，而是缓存其低秩分解后的隐向量。在计算注意力时，再从隐向量重建出完整的 Key 和 Value。</p>
+
+<pre><code># MLA 的 KV 压缩示意
+def mla_compress(k, v, compress_matrix):
+    # k, v: [batch, heads, seq_len, dim_per_head]
+    # 低秩压缩
+    k_latent = k @ compress_matrix  # [batch, heads, seq_len, latent_dim]
+    v_latent = v @ compress_matrix
+    # 仅缓存 latent 向量
+    cache.append((k_latent, v_latent))
+    return k_latent, v_latent
+
+def mla_decompress(k_latent, v_latent, reconstruct_matrix):
+    k = k_latent @ reconstruct_matrix
+    v = v_latent @ reconstruct_matrix
+    return k, v</code></pre>
+
+<h3>推理效率提升</h3>
+<p>通过 MLA 机制，KV Cache 的存储需求可降低 4-8 倍，使得长序列推理成为可能。同时，MLA 保持了与标准 Multi-head Attention 相当的模型质量，在长上下文任务上表现优异。</p>
+
+<h2>训练策略</h2>
+<p>DeepSeek 的预训练策略同样值得关注。模型在海量高质量数据上进行训练，采用了动态学习率调度、梯度裁剪优化等技术。在训练稳定性方面，DeepSeek 引入 Z-loss 正则化来稳定 MoE 训练过程，并通过 FP8 混合精度训练实现显著的训练加速。</p>
+
+<ul>
+  <li><strong>数据质量</strong>：经过严格筛选和去重的高质量语料</li>
+  <li><strong>长上下文扩展</strong>：通过渐进式长度扩展策略，从 4K 逐步扩展到 128K</li>
+  <li><strong>对齐训练</strong>：基于 RLHF 和 DPO 的对齐策略，提升指令跟随能力</li>
+</ul>
+
+<h2>总结</h2>
+<p>DeepSeek 通过 MoE 和 MLA 两大核心技术，在开源模型领域树立了新的标杆。MoE 架构实现了计算效率与模型容量的平衡，MLA 机制则有效解决了长上下文推理的内存瓶颈。这些创新设计为后续的大模型研究提供了重要的技术参考。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">DeepSeek</span>
+      <span class="p-tag">MoE</span>
+      <span class="p-tag">推理优化</span>
+      <span class="p-tag">架构解析</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
