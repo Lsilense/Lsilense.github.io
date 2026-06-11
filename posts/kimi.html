@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kimi 大模型技术解析 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>Kimi 大模型技术解析：超长上下文与 MoE 架构</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 11 日</span>
+      <span>🏷️ <a href="../posts.html?tag=Kimi" style="color:var(--copper-light)">Kimi</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>Kimi 是由月之暗面（Moonshot AI）开发的大型语言模型系列。自推出以来，Kimi 以业界领先的超长上下文窗口著称——从最初的 128K、200 万 token，到 Kimi K2 版本实现千万级 token 的上下文支持。本文将深入分析 Kimi 的核心技术方案，包括其 MoE 架构、长上下文技术以及训练推理优化策略。</p>
+
+<h2>Kimi 模型系列概览</h2>
+<p>Kimi 模型系列经历了多个版本的演进，每一代都在能力和效率上实现了显著提升：</p>
+
+<ul>
+  <li><strong>Kimi 初始版</strong>：以 128K 上下文窗口亮相，在长文本理解和摘要任务中表现突出</li>
+  <li><strong>Kimi 更新版</strong>：将上下文扩展至 200 万 token，引入更高效的内存管理机制</li>
+  <li><strong>Kimi K2</strong>：采用 MoE 架构的旗舰模型，在保持超长上下文能力的同时，显著提升了推理效率和模型容量</li>
+</ul>
+
+<h2>MoE 架构设计</h2>
+<p>Kimi K2 采用混合专家（MoE）架构，在保持推理效率的同时扩展模型容量。与 DeepSeek 类似，Kimi K2 也采用了稀疏激活策略，但有其独特的设计取舍。</p>
+
+<h3>专家路由机制</h3>
+<p>Kimi K2 实现了高效的路由策略，通过精细化的负载均衡设计确保各个专家网络的充分训练和利用。在门控网络设计上，Kimi 采用了可调节的 Top-K 路由策略，允许在推理时根据任务复杂度动态选择激活的专家数量，从而在质量与效率之间取得灵活平衡。</p>
+
+<pre><code># Kimi 风格的动态路由示意
+def dynamic_route(x, router, experts, min_k=1, max_k=4):
+    logits = router(x)
+    probs = softmax(logits, dim=-1)
+    # 根据置信度动态选择专家数量
+    confidence, indices = probs.sort(descending=True)
+    cum_confidence = confidence.cumsum(dim=-1)
+    k = (cum_confidence &lt; 0.9).sum(dim=-1).clamp(min_k, max_k)
+    # 激活动态数量的专家
+    output = sum(experts[indices[i]](x) * confidence[i] for i in range(k))
+    return output</code></pre>
+
+<h3>专家专业化</h3>
+<p>Kimi 的 MoE 训练过程中展现出自然的专家专业化现象——不同的专家网络在训练后自动学会处理不同类型的知识或模式。部分专家倾向于处理代码和数学推理，另一些则更擅长处理自然语言理解和生成任务。这种隐式的专业化分工使得模型能够以更少的激活参数实现更强的综合能力。</p>
+
+<h2>超长上下文技术</h2>
+<p>超长上下文是 Kimi 最核心的技术亮点。支持百万甚至千万级 token 的上下文窗口，依赖以下几项关键技术。</p>
+
+<h3>Ring Attention</h3>
+<p>Ring Attention 是支持超长上下文训练的关键分布式注意力机制。它将长序列均匀分布在多个 GPU 上，每个 GPU 持有序列的一部分，并通过环形通信模式逐块完成注意力计算。这种方式使得注意力计算的显存需求不再随序列长度线性增长，而是由参与计算的设备数量分担。</p>
+
+<pre><code># Ring Attention 简化示意
+def ring_attention(q_local, k_local, v_local, comm_group):
+    # 每个设备持有序列的一部分
+    attn_output = 0
+    for i in range(comm_group.size):
+        # 当前设备计算本地注意力
+        local_scores = q_local @ k_local.T
+        local_attn = softmax(local_scores) @ v_local
+        attn_output += local_attn
+        # 将 K/V 块传递给下一个设备
+        k_local = comm_group.send_recv(k_local)
+        v_local = comm_group.send_recv(v_local)
+    return attn_output</code></pre>
+
+<h3>Paged Attention 与内存管理</h3>
+<p>Kimi 在推理阶段采用了类似 vLLM 的 Paged Attention 机制，将 KV Cache 分页管理。与传统连续内存分配相比，分页管理消除了显存碎片化问题，支持更高效的内存共享（如并行解码时的多个假设共享同一前缀的 KV Cache）。这使得部署超长上下文模型成为可能，在有限显存下支持更大的并发请求。</p>
+
+<h3>位置编码与长度外推</h3>
+<p>为了支持上下文窗口的持续扩展，Kimi 采用了 RoPE（旋转位置编码）及其改进版本。通过渐进式训练策略，模型从较短上下文起步，逐步过渡到超长上下文。在推理时，配合 NTK-aware 插值和 YaRN 等长度外推方法，模型可以较好地泛化到超出训练长度的上下文范围。</p>
+
+<h2>训练与对齐</h2>
+<h3>预训练策略</h3>
+<p>Kimi 的训练涉及超大规模的高质量语料，据公开信息，预训练数据涵盖多语言文本、代码、数学和专业知识领域。针对超长上下文任务，Kimi 采用分阶段训练策略：先在大规模通用数据上进行预训练，再通过长上下文持续训练阶段专门优化长距离依赖建模能力。</p>
+
+<h3>对齐与指令微调</h3>
+<p>在对齐方面，Kimi 采用多层级的优化方案：</p>
+<ul>
+  <li><strong>监督微调（SFT）</strong>：使用高质量的人工标注指令数据</li>
+  <li><strong>偏好对齐</strong>：基于 RLHF 或 DPO 等偏好学习方法</li>
+  <li><strong>长上下文对齐</strong>：专门设计的超长上下文评测集用于对齐训练，确保模型在超长输入下仍能准确理解和执行指令</li>
+</ul>
+
+<h2>推理优化</h2>
+<p>Kimi K2 作为 MoE 模型，在推理部署上进行了多方面的优化：</p>
+<ul>
+  <li><strong>专家预加载</strong>：根据任务动态预测需要激活的专家子集，减少不必要的显存占用</li>
+  <li><strong>KV Cache 量化</strong>：对 KV Cache 进行低精度量化（如 INT8、FP8），有效降低长上下文推理的显存需求</li>
+  <li><strong>投机解码</strong>：使用轻量级 draft model 加速推理，在保持生成质量的同时提升吞吐</li>
+</ul>
+
+<h2>总结</h2>
+<p>Kimi 大模型系列在超长上下文处理能力上树立了行业标杆。其技术路线——MoE 架构 + Ring Attention + 高效内存管理——为大规模语言模型的发展提供了一条可借鉴的路径。随着上下文窗口的不断扩展和推理效率的提升，Kimi 在文档理解、代码库分析、知识密集型任务等领域的应用前景广阔。</p>
+
+<p>值得注意的是，超长上下文能力也带来了新的挑战：如何有效利用百万级上下文中的信息、如何评估模型在超长输入下的真实表现、以及如何降低超长上下文推理的计算成本，这些都是未来值得持续关注的研究方向。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">Kimi</span>
+      <span class="p-tag">MoE</span>
+      <span class="p-tag">长上下文</span>
+      <span class="p-tag">推理优化</span>
+      <span class="p-tag">架构解析</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

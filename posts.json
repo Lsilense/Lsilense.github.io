@@ -12,5 +12,12 @@
     "date": "2026-05-20",
     "excerpt": "全面解读 Qwen2 系列模型在架构设计、预训练策略和长上下文扩展方面的技术细节，包括 SwiGLU、GQA 等关键组件的实现分析。",
     "tags": ["主流模型", "Qwen", "训练"]
+  },
+  {
+    "id": "kimi",
+    "title": "Kimi 大模型技术解析：超长上下文与 MoE 架构",
+    "date": "2026-06-11",
+    "excerpt": "深入分析 Kimi 大模型的核心技术方案，包括 MoE 架构设计、Ring Attention 超长上下文技术、Paged Attention 内存管理以及训练推理优化策略。",
+    "tags": ["主流模型", "Kimi", "MoE", "长上下文", "推理优化"]
   }
 ]
