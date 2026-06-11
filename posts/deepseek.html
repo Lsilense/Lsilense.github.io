@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
 .post-detail .p-body .katex { font-size: 1.05em; }
 .post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
 .post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
 </style>
 </head>
 <body>
@@ -147,6 +151,7 @@ graph TB
     Output --> PRED[("预测 Token<br/>t₁, t₂, ..., tₙ")]
 </div>
 <p class="diagram-caption">图 1：DeepSeek-V3 整体架构 — 每个 Transformer Block 包含 MLA + DeepSeekMoE，残差连接环绕，最终经输出头产生预测</p>
+
 
 <h2>架构设计：继承与创新</h2>
 <p>DeepSeek-V3 的整体架构仍基于 Transformer 框架，沿用了 DeepSeek-V2 中验证有效的 MLA 和 DeepSeekMoE 设计。在此基础上，V3 引入了两项关键创新。</p>
@@ -246,6 +251,11 @@ flowchart LR
     O_L --> H_OUT[("hₜ' ∈ ℝ⁷¹⁶⁸")]
 </div>
 <p class="diagram-caption">图 2：MLA 注意力机制详解 — K/V 经低秩压缩后缓存（推理时仅存 d_c 维隐向量），Q 拆分 RoPE 部分和非 RoPE 部分，在线解压缩后计算标准多头注意力</p>
+
+<div class="paper-figure">
+  <img src="../assets/paper-fig2-mla.png" alt="Multi-head Latent Attention (Paper Figure 2)" loading="lazy">
+    <p class="paper-caption"><span class="badge">论文原图</span> DeepSeek-V3 MLA（Multi-head Latent Attention）详细架构</p>
+</div>
 
 <pre><code># MLA 的低秩联合压缩
 def mla_forward(h, W_dk, W_dv, W_uk, W_uv):
@@ -487,6 +497,11 @@ flowchart TB
 </div>
 <p class="diagram-caption">图 5：多 Token 预测（MTP）— <b>左（训练）</b>：MTP Module 接收共享隐藏状态和 Token 嵌入，预测下一位置，梯度回传影响主模型；<b>右（推理）</b>：MTP Module 作为 Draft Model 接入投机解码流程加速生成</p>
 
+<div class="paper-figure">
+  <img src="../assets/paper-fig3-mtp.png" alt="Multi-Token Prediction (Paper Figure 3)" loading="lazy">
+    <p class="paper-caption"><span class="badge">论文原图</span> DeepSeek-V3 多 Token 预测（MTP）训练框架</p>
+</div>
+
 <pre><code># MTP 多 Token 预测示意 (D=1)
 def mtp_loss(model, tokens, mtp_module):
     # tokens: [batch, seq_len]
@@ -570,6 +585,11 @@ flowchart TB
     classDef fp32 fill:#2a0d0d,stroke:#e879f9,color:#e8e4dd,stroke-width:2px
 </div>
 <p class="diagram-caption">图 6：FP8 混合精度训练 — 前向和反向中的核心矩阵乘在 FP8 下完成，累加后转 BF16 传播。主权重和优化器状态保持 FP32 精度，更新后量化为 FP8 供下一轮使用</p>
+
+  <div class="paper-figure">
+    <img src="../assets/paper-fig4-fp8.png" alt="FP8 Training Framework" loading="lazy">
+    <p class="paper-caption"><span class="badge">论文原图</span> DeepSeek-V3 FP8 混合精度训练框架</p>
+  </div>
 
 <h3>算法-框架-硬件协同设计</h3>
 <p>跨节点 MoE 训练中的通信开销是主要瓶颈。DeepSeek-V3 通过算法、框架和硬件的协同设计，几乎实现了计算与通信的完全重叠。</p>
@@ -663,6 +683,11 @@ graph LR
     end
 </div>
 <p class="diagram-caption">图 8：关键评测对比 — DeepSeek-V3（37B 激活参数）在多数基准上超越 LLaMA 3.1-405B（405B 密集参数），与 GPT-4 等闭源模型持平。数据来源：DeepSeek-V3 Technical Report (arXiv:2412.19437)</p>
+
+  <div class="paper-figure">
+    <img src="../assets/paper-fig5-results.png" alt="DeepSeek-V3 Benchmark Results" loading="lazy">
+    <p class="paper-caption"><span class="badge">论文原图</span> DeepSeek-V3 与主流模型综合性能对比</p>
+  </div>
 
 <h2>性能表现</h2>
 <p>综合评测显示，DeepSeek-V3 在多个基准上超越了同期的开源模型（包括 Qwen2.5-72B 和 LLaMA 3.1-405B），并与 GPT-4、Claude 3.5 等领先闭源模型达到相当水平。</p>
