@@ -1,9 +1,9 @@
 [
   {
     "id": "deepseek",
-    "title": "DeepSeek 模型架构解析：MoE 与 MLA 的创新实践",
-    "date": "2026-05-15",
-    "excerpt": "深入解析 DeepSeek 系列模型的 MoE（混合专家）架构与 MLA（Multi-head Latent Attention）机制，探讨其如何在保持高性能的同时实现极致的推理效率。",
+    "title": "DeepSeek-V3 技术解析：无辅助损失负载均衡与多 Token 预测",
+    "date": "2026-06-11",
+    "excerpt": "深入解析 DeepSeek-V3 的核心创新：无辅助损失负载均衡（Auxiliary-Loss-Free Load Balancing）、多 Token 预测（MTP）训练目标、FP8 混合精度训练框架，以及 MLA 与 DeepSeekMoE 架构设计。",
     "tags": ["主流模型", "DeepSeek", "MoE", "推理优化"]
   },
   {

@@ -3,12 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DeepSeek 模型架构解析 · Lsilense</title>
+<title>DeepSeek-V3 技术解析 · Lsilense</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
 <script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  // 主题切换时重新渲染
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+</style>
 </head>
 <body>
 
@@ -32,80 +85,620 @@
 <article class="post-detail">
   <a href="../posts.html" class="back-link">← 返回文章列表</a>
   <div class="p-heading">
-    <h1>DeepSeek 模型架构解析：MoE 与 MLA 的创新实践</h1>
+    <h1>DeepSeek-V3 技术解析：无辅助损失负载均衡与多 Token 预测</h1>
     <div class="p-meta">
-      <span>📅 2026 年 5 月 15 日</span>
+      <span>📅 2026 年 6 月 11 日</span>
       <span>🏷️ <a href="../posts.html?tag=DeepSeek" style="color:var(--copper-light)">DeepSeek</a></span>
     </div>
   </div>
   <div class="p-body">
 
 <h2>引言</h2>
-<p>DeepSeek 系列模型自发布以来，凭借其卓越的性能表现和创新的架构设计，迅速成为开源大模型领域的重要力量。本文将从模型架构视角，深入解析 DeepSeek 的核心技术——MoE（Mixture of Experts）与 MLA（Multi-head Latent Attention）机制。</p>
+<p>DeepSeek-V3 是深度求索于 2024 年 12 月发布的旗舰级开源大语言模型。作为 DeepSeek-V2 的继承者，V3 在保留 MLA 和 DeepSeekMoE 两大核心架构的基础上，引入了多项突破性创新——无辅助损失负载均衡（Auxiliary-Loss-Free Load Balancing）、多 Token 预测（Multi-Token Prediction, MTP）训练目标，以及 FP8 混合精度训练框架。最终模型在仅消耗 278.8 万 H800 GPU 小时的情况下完成训练，且全程未出现任何不可恢复的 Loss 尖峰。本文将从架构设计、训练优化和推理部署三个维度深入解析 DeepSeek-V3。</p>
 
-<h2>DeepSeek MoE 架构</h2>
-<p>DeepSeek 采用混合专家（MoE）架构作为其核心设计方案。与传统密集模型不同，MoE 架构通过稀疏激活的方式，在保持模型容量的同时大幅降低计算成本。</p>
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>论文：</strong>DeepSeek-V3 Technical Report<br>
+<a href="https://arxiv.org/abs/2412.19437" target="_blank" style="color:var(--copper-light)">https://arxiv.org/abs/2412.19437</a> · arXiv:2412.19437
+</p>
 
-<h3>路由策略</h3>
-<p>DeepSeek 实现了负载均衡的路由策略，每个 Token 被路由到 Top-2 个专家网络。路由机制基于可学习的门控网络，通过 Softmax 归一化产生专家选择概率。关键创新在于引入专家负载均衡损失（Load Balancing Loss），确保各专家被均匀使用，避免"专家坍缩"问题。</p>
-
-<pre><code># 简化的路由逻辑
-def route_token(x, router, experts, top_k=2):
-    logits = router(x)  # [d_model, num_experts]
-    probs = softmax(logits, dim=-1)
-    top_k_vals, top_k_idx = topk(probs, top_k, dim=-1)
-    # 仅激活 top-k 专家
-    output = sum(experts[i](x) * w[i] for i, w in zip(top_k_idx, top_k_vals))
-    return output</code></pre>
-
-<h3>细粒度专家分配</h3>
-<p>DeepSeek 进一步细化了专家粒度的设计方案。不同于传统 MoE 将整个 FFN 层作为一个专家，DeepSeek 采用更细粒度的专家分割策略，将 FFN 层的中间维度划分为多个独立专家，每个专家负责不同的表征子空间。这种设计使得模型可以在相同计算预算下容纳更多专家，提升模型的表达能力和知识容量。</p>
-
-<h2>MLA：Multi-head Latent Attention</h2>
-<p>MLA（Multi-head Latent Attention）是 DeepSeek 的另一项核心技术，旨在解决长上下文推理中的 KV Cache 瓶颈问题。</p>
-
-<h3>问题的起源</h3>
-<p>在标准 Transformer 中，每个解码步骤都需要缓存所有历史 Token 的 Key 和 Value 矩阵。当序列长度达到 128K 甚至 1M 时，KV Cache 的内存占用会迅速膨胀，成为推理的主要瓶颈。</p>
-
-<h3>核心思想</h3>
-<p>MLA 通过引入低秩压缩机制，将 Key 和 Value 投影到更低维的隐空间（Latent Space）中进行缓存。具体而言，对于每个注意力头，MLA 不直接缓存完整的 Key 和 Value，而是缓存其低秩分解后的隐向量。在计算注意力时，再从隐向量重建出完整的 Key 和 Value。</p>
-
-<pre><code># MLA 的 KV 压缩示意
-def mla_compress(k, v, compress_matrix):
-    # k, v: [batch, heads, seq_len, dim_per_head]
-    # 低秩压缩
-    k_latent = k @ compress_matrix  # [batch, heads, seq_len, latent_dim]
-    v_latent = v @ compress_matrix
-    # 仅缓存 latent 向量
-    cache.append((k_latent, v_latent))
-    return k_latent, v_latent
-
-def mla_decompress(k_latent, v_latent, reconstruct_matrix):
-    k = k_latent @ reconstruct_matrix
-    v = v_latent @ reconstruct_matrix
-    return k, v</code></pre>
-
-<h3>推理效率提升</h3>
-<p>通过 MLA 机制，KV Cache 的存储需求可降低 4-8 倍，使得长序列推理成为可能。同时，MLA 保持了与标准 Multi-head Attention 相当的模型质量，在长上下文任务上表现优异。</p>
-
-<h2>训练策略</h2>
-<p>DeepSeek 的预训练策略同样值得关注。模型在海量高质量数据上进行训练，采用了动态学习率调度、梯度裁剪优化等技术。在训练稳定性方面，DeepSeek 引入 Z-loss 正则化来稳定 MoE 训练过程，并通过 FP8 混合精度训练实现显著的训练加速。</p>
-
+<h2>模型概览</h2>
+<p>DeepSeek-V3 的核心规格如下：</p>
 <ul>
-  <li><strong>数据质量</strong>：经过严格筛选和去重的高质量语料</li>
-  <li><strong>长上下文扩展</strong>：通过渐进式长度扩展策略，从 4K 逐步扩展到 128K</li>
-  <li><strong>对齐训练</strong>：基于 RLHF 和 DPO 的对齐策略，提升指令跟随能力</li>
+  <li><strong>总参数：</strong>671B（含 MTP 模块为 685B）</li>
+  <li><strong>激活参数：</strong>37B per token</li>
+  <li><strong>架构：</strong>MoE Transformer（MLA + DeepSeekMoE）</li>
+  <li><strong>隐藏维度：</strong>$d = 7168$，注意力头 $n_h = 128$，每头维度 $d_h = 128$</li>
+  <li><strong>专家配置：</strong>256 个路由专家（Top-8 激活）+ 1 个共享专家</li>
+  <li><strong>上下文长度：</strong>128K tokens</li>
+  <li><strong>训练数据：</strong>14.8 万亿 tokens</li>
+  <li><strong>训练成本：</strong>2.788M H800 GPU 小时</li>
+  <li><strong>优化器：</strong>AdamW，cosine 学习率调度</li>
+  <li><strong>FFN 激活：</strong>SwiGLU</li>
+  <li><strong>开源协议：</strong>MIT</li>
+</ul>
+
+<!-- ├── 整体架构图 ── -->
+<div class="mermaid">
+graph TB
+    subgraph Input["输入 (seq_len ≤ 128K)"]
+        T[("Token 序列<br/>x₁, x₂, ..., xₜ")]
+    end
+
+    subgraph Embed["Token Embedding<br/>d = 7168"]
+        E["Embedding Layer"]
+        T --> E
+    end
+
+    subgraph Block["Transformer Block × N<br/>(每个 Block 相同结构)"]
+        direction TB
+        LN1["LayerNorm"] --> MLA["Multi-head Latent Attention<br/>n_h = 128, d_h = 128"]
+        MLA --> RES1["残差连接 +"]
+        RES1 --> LN2["LayerNorm"]
+        LN2 --> MOE["DeepSeekMoE FFN<br/>1 Shared + 256 Routed<br/>Top-8 激活, SwiGLU"]
+        MOE --> RES2["残差连接 +"]
+        E --> LN1
+    end
+
+    subgraph Output["输出头"]
+        O["LayerNorm → Linear → Softmax<br/>→ Logits / Loss"]
+    end
+
+    Block --> Output
+    Output --> PRED[("预测 Token<br/>t₁, t₂, ..., tₙ")]
+</div>
+<p class="diagram-caption">图 1：DeepSeek-V3 整体架构 — 每个 Transformer Block 包含 MLA + DeepSeekMoE，残差连接环绕，最终经输出头产生预测</p>
+
+<h2>架构设计：继承与创新</h2>
+<p>DeepSeek-V3 的整体架构仍基于 Transformer 框架，沿用了 DeepSeek-V2 中验证有效的 MLA 和 DeepSeekMoE 设计。在此基础上，V3 引入了两项关键创新。</p>
+
+<h3>MLA：高效的注意力机制</h3>
+<p>DeepSeek-V3 延续了多头潜在注意力（Multi-head Latent Attention, MLA）架构。其核心思想是对 Attention 的 Key 和 Value 进行低秩联合压缩，将完整的 K/V 矩阵投影到更低维的隐空间中。</p>
+
+<p>对于第 $t$ 个 Token 的注意力输入 $\mathbf{h}_t \in \mathbb{R}^d$，MLA 首先通过两个降维矩阵将 Key 和 Value 压缩到低维隐空间：</p>
+
+<div class="formula-block">
+$$
+\mathbf{k}_t^C = \mathbf{W}_{DK} \mathbf{h}_t, \quad
+\mathbf{v}_t^C = \mathbf{W}_{DV} \mathbf{h}_t
+$$
+</div>
+
+<p>其中 $\mathbf{W}_{DK}, \mathbf{W}_{DV} \in \mathbb{R}^{d_c \times d}$ 是降维矩阵，$d_c \ll d$ 是隐空间维度。推理时仅需缓存压缩后的 $(\mathbf{k}_t^C, \mathbf{v}_t^C)$ 而非完整的 K/V，KV Cache 存储从 $2 \times n_h \times d_h$ 降至 $2 \times d_c$——使存储需求降低 $4$-$8$ 倍。在计算注意力时，再通过升维矩阵重建出完整的 Key 和 Value：</p>
+
+<div class="formula-block">
+$$
+\mathbf{k}_t = \mathbf{W}_{UK} \mathbf{k}_t^C, \quad
+\mathbf{v}_t = \mathbf{W}_{UV} \mathbf{v}_t^C
+$$
+</div>
+
+<p>其中 $\mathbf{W}_{UK}, \mathbf{W}_{UV} \in \mathbb{R}^{d_h n_h \times d_c}$。最终注意力计算为标准 Scaled Dot-Product Attention，配合 RoPE 位置编码。注意 MLA 对 Query 也采用类似的分割策略以兼容 RoPE：</p>
+
+<div class="formula-block">
+$$
+\mathbf{q}_t = [\mathbf{q}_t^R; \mathbf{q}_t^C], \quad
+\mathbf{q}_t^R = \text{RoPE}(\mathbf{W}_{QR} \mathbf{h}_t), \quad
+\mathbf{q}_t^C = \mathbf{W}_{QC} \mathbf{h}_t
+$$
+$$
+\mathbf{o}_t = \sum_{i=1}^{n_h} \text{Softmax}\left(\frac{\mathbf{q}_{t,i}^\top \mathbf{k}_{\leq t,i}}{\sqrt{d_h}}\right) \mathbf{v}_{\leq t,i}
+$$
+$$
+\mathbf{h}_t' = \mathbf{W}_O \mathbf{o}_t
+$$
+</div>
+
+<div class="mermaid">
+flowchart LR
+    subgraph InputLayer["输入层"]
+        H[("Hidden State<br/>hₜ ∈ ℝ⁷¹⁶⁸")]
+    end
+
+    subgraph SplitQKV["Q/K/V 拆分"]
+        Q_W["W_Q<br/>d → d_q n_h<br/>含 RoPE 拆分"]
+        K_W["W_DK<br/>d → d_c"]
+        V_W["W_DV<br/>d → d_c"]
+        H --> Q_W
+        H --> K_W
+        H --> V_W
+    end
+
+    subgraph Compress["低秩联合压缩"]
+        K_C[("K Latent<br/>kₜ^C ∈ ℝ^{d_c}")]
+        V_C[("V Latent<br/>vₜ^C ∈ ℝ^{d_c}")]
+        K_W --> K_C
+        V_W --> V_C
+    end
+
+    subgraph Cache["KV Cache (推理时)"]
+        CACHE[("缓存 k^C, v^C<br/>仅 d_c × 2 per token<br/>存储降至 1/4 ~ 1/8")]
+        K_C --> CACHE
+        V_C --> CACHE
+    end
+
+    subgraph Decompress["在线解压缩"]
+        K_DEC["W_UK<br/>d_c → d_h n_h"]
+        V_DEC["W_UV<br/>d_c → d_h n_h"]
+        CACHE --> K_DEC
+        CACHE --> V_DEC
+    end
+
+    subgraph RoPE["RoPE 处理"]
+        Q_R["qₜ^R = RoPE(W_QR hₜ)"]
+        Q_C["qₜ^C = W_QC hₜ"]
+        Q_W --> Q_R
+        Q_W --> Q_C
+    end
+
+    subgraph AttnOut["Attention 计算"]
+        ATT[("Score = Softmax(Q·K/√d_h)<br/>Output = Σ score · V<br/>逐头计算后拼接")]
+        Q_R --> ATT
+        Q_C --> ATT
+        K_DEC --> ATT
+        V_DEC --> ATT
+    end
+
+    subgraph Output["输出投影"]
+        O_L["W_O"]
+        ATT --> O_L
+    end
+
+    O_L --> H_OUT[("hₜ' ∈ ℝ⁷¹⁶⁸")]
+</div>
+<p class="diagram-caption">图 2：MLA 注意力机制详解 — K/V 经低秩压缩后缓存（推理时仅存 d_c 维隐向量），Q 拆分 RoPE 部分和非 RoPE 部分，在线解压缩后计算标准多头注意力</p>
+
+<pre><code># MLA 的低秩联合压缩
+def mla_forward(h, W_dk, W_dv, W_uk, W_uv):
+    # h: [batch, seq_len, d] 输入
+    # 联合压缩 K 和 V
+    k_latent = h @ W_dk   # [batch, seq_len, latent_dim]
+    v_latent = h @ W_dv
+    # 缓存在隐空间中
+    cache = (k_latent, v_latent)
+    # 解压缩回完整维度
+    k = k_latent @ W_uk    # [batch, seq_len, d_k]
+    v = v_latent @ W_uv
+    return attention(h, k, v), cache</code></pre>
+
+<h3>DeepSeekMoE：细粒度专家设计</h3>
+<p>在前馈网络部分，DeepSeek-V3 采用细粒度的 MoE 架构，配置为 <strong>256 个路由专家 + 1 个共享专家</strong>，每个 Token 激活 Top-8 个路由专家以及共享专家。与传统 MoE（如 GShard）将整个 FFN 作为一个专家不同，DeepSeekMoE 将 FFN 中间维度拆分为更小的专家单元，并额外隔离出共享专家处理所有 Token 共有的模式。</p>
+
+<p>设 $\mathbf{u}_t$ 为第 $t$ 个 Token 的 FFN 输入，FFN 使用 <strong>SwiGLU</strong> 激活函数。则 FFN 输出 $\mathbf{h}_t'$ 的计算方式为：</p>
+
+<div class="formula-block">
+$$
+\mathbf{h}_t' = \mathbf{u}_t + \text{FFN}^{(s)}(\mathbf{u}_t) + \sum_{j=1}^{256} g_{j,t} \cdot \text{FFN}_j^{(r)}(\mathbf{u}_t)
+$$
+</div>
+
+<p>门控值 $g_{j,t}$ 通过 Top-8 路由计算，其中 $\mathbf{e}_j$ 是第 $j$ 个专家的路由中心向量：</p>
+
+<div class="formula-block">
+$$
+g_{j,t} = \frac{s_{j,t}}{\sum_{k \in \text{Top-8}} s_{k,t}}, \quad
+s_{j,t} = \text{Softmax}_j(\mathbf{u}_t^\top \mathbf{e}_j)
+$$
+</div>
+
+<p>FFN 内部使用 SwiGLU 结构，即门控线性单元配合 Swish 激活：$\text{FFN}(x) = (\text{Swish}(x W_g) \odot x W_u) W_d$。每个 Token 激活 8 个路由专家（约 $8/256 = 3.1\%$ 的专家参数）加上 1 个共享专家，在保持计算高效的同时，使 671B 总参数中仅 37B 被激活。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph InputTok["输入 Token"]
+        X[("xₜ ∈ ℝ⁷¹⁶⁸")]
+    end
+
+    subgraph RouterGating["路由门控"]
+        R["Router<br/>Linear(7168, 256)"]
+        Rscore["亲和度分数<br/>scores ∈ ℝ²⁵⁶"]
+        Rbias["+ 可学习偏置 b_i<br/>(无辅助损失)"]
+        Rsoft["Softmax 归一化"]
+        Rtop["Top-8 选择"]
+        X --> R
+        R --> Rscore
+        Rscore --> Rbias
+        Rbias --> Rsoft
+        Rsoft --> Rtop
+    end
+
+    subgraph SharedExpert["共享专家（始终激活）"]
+        SHARED["1 × SwiGLU FFN<br/>计算所有 Token<br/>的通用模式"]
+    end
+
+    subgraph RoutedExperts["路由专家池（256 个）"]
+        EXP1["Expert 1<br/>SwiGLU FFN"]
+        EXP2["Expert 2<br/>SwiGLU FFN"]
+        EXP3["Expert ...<br/>SwiGLU FFN"]
+        EXP256["Expert 256<br/>SwiGLU FFN"]
+    end
+
+    subgraph Activation["Top-8 稀疏激活<br/>仅 8/256 = 3.1% 专家参与"]
+        ACT1["Expert ₁₂"]
+        ACT2["Expert ₃₇"]
+        ACT3["Expert ..."]
+        ACT8["Expert ₂₀₃"]
+        Rtop --> ACT1
+        Rtop --> ACT2
+        Rtop --> ACT3
+        Rtop --> ACT8
+    end
+
+    subgraph Fused["输出融合"]
+        F["hₜ' = Shared(xₜ) + Σ score_i × Expert_i(xₜ)"]
+        SHARED --> F
+        ACT1 --> F
+        ACT2 --> F
+        ACT3 --> F
+        ACT8 --> F
+    end
+
+    X --> SHARED
+    X --> RoutedExperts
+
+    F --> Out[("输出 hₜ'<br/>参数总量 671B<br/>实际激活 37B")]
+</div>
+<p class="diagram-caption">图 3：DeepSeekMoE 详细架构 — 1 个共享专家处理通用模式，256 个路由专家各司其职，经 Router（含可学习偏置 b_i）选择 Top-8 后加权融合。FFN 内部使用 SwiGLU 激活</p>
+
+<h2>核心创新一：无辅助损失负载均衡</h2>
+<p>这是 DeepSeek-V3 最引人注目的创新之一。在传统的 MoE 模型中，路由网络往往倾向于将 Token 集中分配给少数"强势"专家，导致其他专家得不到充分训练（即路由坍缩）。以往的解决方案是通过辅助损失（Auxiliary Loss）来惩罚不均衡分配，但辅助损失过大会损害模型性能。</p>
+
+<p>DeepSeek-V3 提出了一种全新的思路：不为负载均衡引入额外的损失项，而是为每个专家添加一个可学习的偏置项 $b_j$，在路由计算时直接加到该专家的亲和度分数上：</p>
+
+<div class="formula-block">
+$$
+s_{j,t}' = s_{j,t} + b_j, \quad g_{j,t}' = \frac{s_{j,t}'}{\sum_{k \in \text{TopK}} s_{k,t}'}
+$$
+</div>
+
+<p>偏置项 $b_j$ 的更新策略简单而优雅——不与主损失产生梯度耦合，而是通过统计方式动态调整。在 training 中每隔一定步数统计每个专家的 Token 分配比例，并将其与均匀分布目标比较逐减调整 $b_j$。这种机制完全不需要额外的损失函数，避免了辅助损失对模型性能的负面影响。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Problem["MoE 路由坍缩问题"]
+        P1["Router 倾向于<br/>反复选择少数专家"]
+        P2["被冷落的专家<br/>得不到充分训练"]
+        P1 --> P2
+    end
+
+    subgraph Traditional["传统方案：Auxiliary Loss"]
+        T1["引入辅助损失<br/>L_aux = α · CV(load)"]
+        T2["路由器被迫均匀分配"]
+        T3["代价：辅助损失过大<br/>→ 损害模型质量"]
+        P2 --> T1
+        T1 --> T2
+        T2 --> T3
+    end
+
+    subgraph DeepSeek["DeepSeek-V3：无辅助损失方案"]
+        D1["每个路由专家配备<br/>可学习偏置 b_i"]
+        D2["路由分数 =<br/>Softmax(scores + b_i)"]
+        D3{"专家 i 负载检查"}
+        D4["b_i ← b_i - ε<br/>降低选中概率"]
+        D5["b_i ← b_i + ε<br/>提高选中概率"]
+        D6["最终效果：<br/>负载均衡 ✓<br/>模型质量无损 ✓"]
+        P2 --> D1
+        D1 --> D2
+        D2 --> D3
+        D3 -->|"p_i > 目标值"| D4
+        D3 -->|"p_i < 目标值"| D5
+        D4 --> D6
+        D5 --> D6
+    end
+
+    style DeepSeek fill:#1a2a1a,stroke:#34d399,color:#e8e4dd
+    style Traditional fill:#2a1a1a,stroke:#e879f9,color:#e8e4dd
+</div>
+<p class="diagram-caption">图 4：无辅助损失负载均衡 — 对比传统 Auxiliary Loss 方案与 V3 的可学习偏置方案。b_i 通过专家负载统计动态调整，在保证负载均衡的同时不产生额外梯度干扰</p>
+
+<pre><code># 无辅助损失负载均衡
+def expert_routing(x, router, shared_expert, routed_experts, biases, top_k=8):
+    # x: token 输入
+    # biases: 256 个路由专家各自的可学习偏置
+    scores = router(x)                     # [256]
+    scores = scores + biases               # 注入偏置实现负载均衡
+    top_k_scores, top_k_idx = topk(scores, top_k)
+    # 共享专家始终激活
+    output = shared_expert(x)
+    # 仅计算 Top-K 路由专家的输出
+    for idx, score in zip(top_k_idx, top_k_scores):
+        output += routed_experts[idx](x) * score
+    return output</code></pre>
+<p class="diagram-caption">注：DeepSeek-V3 路由代码风格示意，实际实现为批量计算</p>
+
+<h2>核心创新二：多 Token 预测（MTP）</h2>
+<p>传统的因果语言模型在每一步只预测下一个 Token。DeepSeek-V3 引入多 Token 预测训练目标，让模型在每个位置同时预测后续 $D$ 个 Token（论文中 $D=1$，即额外预测 1 个未来 Token）。MTP 模块共享主模型的 Embedding 和输出头（Output Head），仅使用独立的 Transformer Block 处理各深度的预测任务——这种设计确保了 MTP 模块在推理时可无缝作为 Draft Model 用于投机解码。</p>
+
+<p>MTP Module 的输入由主模型的共享隐藏状态 $\mathbf{h}_t$ 和对应 Token 的嵌入拼接而成：</p>
+
+<div class="formula-block">
+$$
+\mathbf{h}_t^{\text{MTP}} = \text{Transformer}_{\text{MTP}}\left( [\mathbf{h}_t; \text{Emb}(t_{t})] \right), \quad
+\mathbf{p}_t = \text{Softmax}(\mathbf{W} \mathbf{h}_t^{\text{MTP}})
+$$
+</div>
+
+<p>其中输出头 $\mathbf{W}$ 与主模型共享。对应的交叉熵损失为：</p>
+
+<div class="formula-block">
+$$
+\mathcal{L}_{\text{MTP}} = -\frac{1}{T}\sum_{t=1}^{T} \log \mathbf{p}_t[t_{t+1}]
+$$
+</div>
+
+<p>总训练损失为：</p>
+
+<div class="formula-block">
+$$
+\mathcal{L} = \mathcal{L}_{\text{main}} + \lambda \cdot \mathcal{L}_{\text{MTP}}
+$$
+</div>
+
+<p>MTP 带来了双重收益：</p>
+<ul>
+  <li><strong>训练信号更密集：</strong>每个位置产生 D 倍的监督信号，加速收敛并改善表征质量</li>
+  <li><strong>投机解码加速：</strong>MTP Module 在推理时可作为轻量级 Draft Model 使用，配合投机解码（Speculative Decoding）提升生成吞吐</li>
+</ul>
+
+<div class="mermaid">
+flowchart TB
+    subgraph TrainingPhase["训练阶段"]
+        direction TB
+        subgraph InputSeq["输入序列"]
+            TK1["x₁"] --> M_EMB
+            TK2["x₂"] --> M_EMB
+            TK3["..."] --> M_EMB
+            TKt["xₜ"] --> M_EMB
+        end
+
+        M_EMB["Embedding (共享)"] --> M_MLA["Main Model<br/>MLA + MoE Blocks"]
+        M_MLA --> M_H["共享 Hidden State hₜ"]
+
+        subgraph MainHead["主预测头"]
+            P0["Linear + Softmax<br/>(共享 Output Head)"]
+            M_H --> P0
+            P0 --> L0["CE Loss: 预测 xₜ₊₁"]
+        end
+
+        subgraph MTPModule["MTP Module (D=1)"]
+            MTP_IN["输入: [hₜ; Emd(xₜ)]<br/>(隐藏状态 + 当前 Token 嵌入)"]
+            MTP_T["独立 Transformer Block"]
+            MTP_P["Linear + Softmax<br/>(共享 Output Head)"]
+            MTP_IN --> MTP_T --> MTP_P --> L1["CE Loss: 预测 xₜ₊₂"]
+            M_H --> MTP_IN
+        end
+
+        subgraph TotalLoss["总损失"]
+            TL["L = L_main + λ · L_mtp"]
+            L0 --> TL
+            L1 --> TL
+        end
+
+        MTPModule -->|"梯度回传<br/>影响主模型表征"| M_MLA
+    end
+
+    subgraph InferencePhase["推理阶段"]
+        direction LR
+        DRAFT["MTP Module<br/>作为 Draft Model"] --> SD["投机解码<br/>Speculative Decoding"]
+        SD --> VERIFY["主模型验证<br/>一次验证多个 Token"]
+        VERIFY --> SPEED["↓<br/>生成速度提升"]
+    end
+
+    MTPModule -.->|"推理时切换"| DRAFT
+</div>
+<p class="diagram-caption">图 5：多 Token 预测（MTP）— <b>左（训练）</b>：MTP Module 接收共享隐藏状态和 Token 嵌入，预测下一位置，梯度回传影响主模型；<b>右（推理）</b>：MTP Module 作为 Draft Model 接入投机解码流程加速生成</p>
+
+<pre><code># MTP 多 Token 预测示意 (D=1)
+def mtp_loss(model, tokens, mtp_module):
+    # tokens: [batch, seq_len]
+    main_logits = model(tokens)            # 主模型预测 next token
+    main_loss = cross_entropy(main_logits, tokens[:, 1:])
+
+    hidden = model.get_hidden(tokens)      # 共享主干表征
+    # MTP Module 预测再下一个 Token
+    mtp_input = concat(hidden, embed(tokens[:, 1:]))
+    mtp_logits = mtp_module(mtp_input)
+    mtp_loss = cross_entropy(mtp_logits, tokens[:, 2:])
+
+    return main_loss + 0.3 * mtp_loss     # MTP 损失按权重加权</code></pre>
+
+<h2>训练基础设施与 FP8 混合精度</h2>
+<p>DeepSeek-V3 的训练效率是另一个重要亮点。模型仅消耗 <strong>278.8 万 H800 GPU 小时</strong>，训练全程使用 2048 块 NVIDIA H800 GPU，在 14.8T Token 上完成预训练。相比同等规模模型大幅降低，这得益于以下几项关键优化。</p>
+
+<h3>FP8 混合精度训练</h3>
+<p>DeepSeek-V3 首次在超大规模模型上验证了 FP8 混合精度训练的可行性和有效性。通过精心设计的量化策略，在前向和反向计算的核心矩阵乘中使用 FP8，在保持模型精度的同时显著降低了显存占用和计算开销。</p>
+
+<p>FP8 有两种常用的指数位配置：E4（4 位指数，3 位尾数，动态范围大精度低）和 E5（5 位指数，2 位尾数，动态范围小精度高）。DeepSeek-V3 根据张量分布特征在不同位置使用不同配置：</p>
+
+<div class="formula-block">
+$$
+\text{FP8 E4: }\; \text{dynamic range} \approx \pm 448,\; \text{precision} \approx 2^{-3}
+$$
+$$
+\text{FP8 E5: }\; \text{dynamic range} \approx \pm 57344,\; \text{precision} \approx 2^{-2}
+$$
+</div>
+
+<p>在前向传播中，权重和激活以 FP8 存储，矩阵乘累加后以 BF16 输出：</p>
+
+<div class="formula-block">
+$$
+\mathbf{Y}_{\text{BF16}} = \text{cast}_{\text{BF16}}\left( \text{MM}_{\text{FP8}}(\mathbf{X}_{\text{FP8}}, \mathbf{W}_{\text{FP8}}) \right)
+$$
+</div>
+
+<p>梯度计算同样在 FP8 下完成，但主权重（Master Weights）和优化器状态保持 FP32 精度，仅在更新步将 FP32 权重量化回 FP8 供下一轮前向使用。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Legend["精度层级图例"]
+        L1["FP8 (E4M3 / E5M2)"]:::fp8
+        L2["BF16"]:::bf16
+        L3["FP32 Master"]:::fp32
+    end
+
+    subgraph Forward["前向传播"]
+        FW1["输入激活<br/>X  FP8"]:::fp8 --> FW2["权重<br/>W  FP8"]:::fp8
+        FW2 --> FW3["FP8 矩阵乘<br/>累加后转 BF16"]:::bf16
+        FW3 --> FW4["激活输出<br/>Y  BF16"]:::bf16
+    end
+
+    subgraph Backward["反向传播"]
+        BW1["输入梯度<br/>dY  BF16"]:::bf16 --> BW2["权重梯度<br/>dW  FP8 量化"]:::fp8
+        BW2 --> BW3["激活梯度<br/>dX  BF16"]:::bf16
+        FW4 --> BW1
+    end
+
+    subgraph Optimizer["优化器状态"]
+        OPT1["Master Weights<br/>FP32"]:::fp32
+        OPT2["Momentum<br/>FP32"]:::fp32
+        OPT3["Variance<br/>FP32"]:::fp32
+    end
+
+    subgraph Update["权重更新 (AdamW)"]
+        UP1["W_master = W_master - lr · m/(√v + ε)<br/>FP32 精度"]:::fp32
+        UP2["量化回 FP8<br/>W_fp8 = cast(W_master)"]:::fp8
+        OPT1 --> UP1
+        OPT2 --> UP1
+        OPT3 --> UP1
+        UP1 --> UP2
+        UP2 -->|"下一轮前向"| FW2
+        BW2 --> UP1
+    end
+
+    classDef fp8 fill:#0d2a0d,stroke:#34d399,color:#e8e4dd,stroke-width:2px
+    classDef bf16 fill:#0d0d2a,stroke:#60a5fa,color:#e8e4dd,stroke-width:2px
+    classDef fp32 fill:#2a0d0d,stroke:#e879f9,color:#e8e4dd,stroke-width:2px
+</div>
+<p class="diagram-caption">图 6：FP8 混合精度训练 — 前向和反向中的核心矩阵乘在 FP8 下完成，累加后转 BF16 传播。主权重和优化器状态保持 FP32 精度，更新后量化为 FP8 供下一轮使用</p>
+
+<h3>算法-框架-硬件协同设计</h3>
+<p>跨节点 MoE 训练中的通信开销是主要瓶颈。DeepSeek-V3 通过算法、框架和硬件的协同设计，几乎实现了计算与通信的完全重叠。</p>
+
+<p>设整个 batch 的 Token 总数为 $B$，专家总数为 $N$，GPU 节点数为 $M$。在标准的 All-to-All 通信模式下，每个 GPU 需要将约 $B \cdot \frac{1}{M}$ 个 Token 的隐藏状态分发给其他 $M-1$ 个节点，同时也从其他节点接收 $B \cdot \frac{M-1}{M}$ 个 Token。通信量约为：</p>
+
+<div class="formula-block">
+$$
+\text{Comm}_{\text{all-to-all}} = \frac{B(M-1)}{M} \cdot d \quad \text{(bytes per GPU)}
+$$
+</div>
+
+<p>DeepSeek-V3 通过以下方式实现计算-通信重叠：</p>
+
+<div class="formula-block">
+$$
+T_{\text{step}} = \max(T_{\text{compute}}, T_{\text{comm}})
+$$
+</div>
+
+<p>即每步迭代的实际耗时不再是 $T_{\text{compute}} + T_{\text{comm}}$，而是两者中的较大值。通过精心设计的异步通信原语，使得本地专家计算和跨节点 Token 传输同时进行，通信延迟被完全隐藏。</p>
+
+<div class="mermaid">
+sequenceDiagram
+    participant GPU0 as GPU 0
+    participant GPU1 as GPU 1
+    participant GPU2 as GPU 2
+    participant GPU3 as GPU 3
+
+    Note over GPU0,GPU3: 阶段 1：本地计算 + 异步发送 All-to-All Dispatch
+    par GPU0 本地计算
+        GPU0->>GPU0: 本地 Expert 前向 (SwiGLU)
+        GPU0-)GPU1: 异步发送 Token 到 GPU1
+        GPU0-)GPU2: 异步发送 Token 到 GPU2
+        GPU0-)GPU3: 异步发送 Token 到 GPU3
+    and GPU1 本地计算
+        GPU1->>GPU1: 本地 Expert 前向 (SwiGLU)
+        GPU1-)GPU0: 异步发送 Token 到 GPU0
+        GPU1-)GPU2: 异步发送 Token 到 GPU2
+        GPU1-)GPU3: 异步发送 Token 到 GPU3
+    and GPU2 本地计算
+        GPU2->>GPU2: 本地 Expert 前向 (SwiGLU)
+        GPU2-)GPU0: 异步发送 Token 到 GPU0
+        GPU2-)GPU1: 异步发送 Token 到 GPU1
+        GPU2-)GPU3: 异步发送 Token 到 GPU3
+    and GPU3 本地计算
+        GPU3->>GPU3: 本地 Expert 前向 (SwiGLU)
+        GPU3-)GPU0: 异步发送 Token 到 GPU0
+        GPU3-)GPU1: 异步发送 Token 到 GPU1
+        GPU3-)GPU2: 异步发送 Token 到 GPU2
+    end
+
+    Note over GPU0,GPU3: ✅ 计算与通信完全重叠 T_step ≈ max(T_compute, T_comm)
+
+    Note over GPU0,GPU3: 阶段 2：接收远程专家结果
+    GPU0-->>GPU0: 接收 GPU1/2/3 的结果
+    GPU1-->>GPU1: 接收 GPU0/2/3 的结果
+    GPU2-->>GPU2: 接收 GPU0/1/3 的结果
+    GPU3-->>GPU3: 接收 GPU0/1/2 的结果
+
+    Note over GPU0,GPU3: 阶段 3：All-to-All Combine 融合输出
+    GPU0->>GPU0: combine(local, remote_1, remote_2, remote_3)
+    GPU1->>GPU1: combine(local, remote_0, remote_2, remote_3)
+    GPU2->>GPU2: combine(local, remote_0, remote_1, remote_3)
+    GPU3->>GPU3: combine(local, remote_0, remote_1, remote_2)
+</div>
+<p class="diagram-caption">图 7：4-GPU 跨节点 MoE 通信重叠 — All-to-All Dispatch 与本地 Expert 计算通过异步通信原语同时进行，通信延迟被完全隐藏。T_step ≈ max(T_compute, T_comm) 而非 T_compute + T_comm</p>
+
+<pre><code># 跨节点 MoE 通信重叠
+def moe_forward_with_overlap(h, local_experts, comm_group):
+    # 阶段 1：计算本地专家 + 同时传输远程 Token
+    with comm_group.overlap():
+        local_output = local_experts(h)   # 计算
+        tokens_sent = comm_group.send_async(h)  # 同时传输
+
+    # 阶段 2：接收远程结果，合并输出
+    remote_output = comm_group.recv()
+    return combine(local_output, remote_output)</code></pre>
+
+<h3>训练稳定性</h3>
+<p>值得特别强调的是，DeepSeek-V3 在整个 14.8T Token 的训练过程中，没有出现任何不可恢复的 Loss 尖峰，也未执行任何回滚。这在超大规模模型训练中极为罕见，充分验证了其架构设计和训练策略的稳健性。</p>
+
+<div class="mermaid">
+graph LR
+    subgraph Benchmark["关键评测对比<br/>DeepSeek-V3 vs LLaMA 3.1 405B & GPT-4"]
+        S1["MMLU<br/>(知识理解)<br/>V3 > 405B ≈ GPT-4"]
+        S2["MATH-500<br/>(数学推理)<br/>V3 >> All Open-Source"]
+        S3["HumanEval<br/>(代码生成)<br/>V3 ≈ GPT-4"]
+        S4["GPQA-Diamond<br/>(科学推理)<br/>V3 > All 405B"]
+        S5["LiveCodeBench<br/>(实时代码)<br/>V3 > All Baselines"]
+    end
+</div>
+<p class="diagram-caption">图 8：关键评测对比 — DeepSeek-V3（37B 激活参数）在多数基准上超越 LLaMA 3.1-405B（405B 密集参数），与 GPT-4 等闭源模型持平。数据来源：DeepSeek-V3 Technical Report (arXiv:2412.19437)</p>
+
+<h2>性能表现</h2>
+<p>综合评测显示，DeepSeek-V3 在多个基准上超越了同期的开源模型（包括 Qwen2.5-72B 和 LLaMA 3.1-405B），并与 GPT-4、Claude 3.5 等领先闭源模型达到相当水平。</p>
+
+<p>以下为关键评测指标上的表现概览（缩略）：</p>
+<ul>
+  <li><strong>MMLU：</strong>DeepSeek-V3 大幅领先 LLaMA 3.1-405B，接近 GPT-4 水平</li>
+  <li><strong>MATH-500：</strong>数学推理能力在所有开源模型中最佳，超越大部分闭源模型</li>
+  <li><strong>HumanEval：</strong>代码生成任务上表现突出，与领先闭源模型持平</li>
+  <li><strong>GPQA：</strong>科学知识推理领先所有同级模型</li>
+  <li><strong>LiveCodeBench：</strong>在实时代码评测集上展现强劲竞争力</li>
+</ul>
+
+<p>值得注意的是，DeepSeek-V3 激活参数仅 37B，不到 LLaMA 3.1-405B 的十分之一，却取得了压倒性的性能优势，充分证明了 MoE 架构和 MLA 机制的有效性。</p>
+
+<h2>推理部署</h2>
+<p>DeepSeek-V3 的推理主要通过 <strong>SGLang</strong> 框架完成。SGLang 提供了完整的 MLA 优化支持，包括 DP Attention、FP8（W8A8）量化、FP8 KV Cache 和 Torch Compile 加速，在开源推理框架中实现了领先的延迟和吞吐性能。SGLang 同时支持 NVIDIA 和 AMD GPU，并支持多节点张量并行（Multi-Node Tensor Parallelism），使得 671B 规模的模型可以在多台联网机器上协同部署。</p>
+
+<p>模型权重以 MIT 协议开源，可从以下地址获取：</p>
+<ul>
+  <li><strong>GitHub：</strong><a href="https://github.com/deepseek-ai/DeepSeek-V3" target="_blank" style="color:var(--copper-light)">github.com/deepseek-ai/DeepSeek-V3</a></li>
+  <li><strong>Hugging Face：</strong>deepseek-ai/DeepSeek-V3（685B，含 14B MTP 模块权重）</li>
 </ul>
 
 <h2>总结</h2>
-<p>DeepSeek 通过 MoE 和 MLA 两大核心技术，在开源模型领域树立了新的标杆。MoE 架构实现了计算效率与模型容量的平衡，MLA 机制则有效解决了长上下文推理的内存瓶颈。这些创新设计为后续的大模型研究提供了重要的技术参考。</p>
+<p>DeepSeek-V3 通过无辅助损失负载均衡、多 Token 预测和 FP8 混合精度训练三大创新，在 671B 参数规模上实现了令人瞩目的性能-成本比。全程无回滚的稳定训练过程和仅 278.8 万 H800 GPU 小时的训练成本，为大模型的高效训练树立了新标杆。模型在预训练后还经历了 SFT（监督微调）和 RL（强化学习）两个对齐阶段，确保其指令跟随能力和安全性。</p>
+
+<p>后续的 DeepSeek-R1 在 V3 基座基础上通过强化学习进一步实现了推理能力的突破，验证了 V3 架构的扩展潜力。模型权重以 MIT 协议完全开源，社区可以在 GitHub 上自由获取和使用。</p>
 
   </div>
   <div class="p-foot">
     <div class="p-tags">
       <span class="p-tag">DeepSeek</span>
       <span class="p-tag">MoE</span>
-      <span class="p-tag">推理优化</span>
+      <span class="p-tag">MTP</span>
+      <span class="p-tag">FP8</span>
       <span class="p-tag">架构解析</span>
     </div>
   </div>
