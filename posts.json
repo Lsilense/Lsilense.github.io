@@ -4,20 +4,59 @@
     "title": "DeepSeek-V3 技术解析：无辅助损失负载均衡与多 Token 预测",
     "date": "2026-06-11",
     "excerpt": "深入解析 DeepSeek-V3 的核心创新：无辅助损失负载均衡（Auxiliary-Loss-Free Load Balancing）、多 Token 预测（MTP）训练目标、FP8 混合精度训练框架，以及 MLA 与 DeepSeekMoE 架构设计。",
-    "tags": ["主流模型", "DeepSeek", "MoE", "推理优化"]
+    "tags": [
+      "主流模型",
+      "DeepSeek",
+      "MoE",
+      "推理优化"
+    ]
+  },
+  {
+    "id": "deepseek-r1",
+    "title": "DeepSeek-R1 技术解析：强化学习激发推理能力",
+    "date": "2026-06-12",
+    "excerpt": "深入解析 DeepSeek-R1 的核心技术方案：GRPO 强化学习算法、R1-Zero 纯 RL 路径中的「顿悟时刻」涌现现象、四阶段冷启动训练管线，以及推理能力通过蒸馏高效迁移至小规模模型。",
+    "tags": [
+      "主流模型",
+      "DeepSeek",
+      "强化学习",
+      "推理优化"
+    ]
+  },
+  {
+    "id": "deepseek-v4",
+    "title": "DeepSeek-V4 技术解析：百万 Token 上下文与混合注意力架构",
+    "date": "2026-06-12",
+    "excerpt": "深入解析 DeepSeek-V4 的核心技术创新：混合注意力 CSA + HCA 架构替代 MLA、流形约束超连接（mHC）替代残差连接、Muon 优化器替代 AdamW、FP4 量化训练，以及独立培养 + 统一融合的双阶段后训练范式。",
+    "tags": [
+      "主流模型",
+      "DeepSeek",
+      "长上下文",
+      "MoE"
+    ]
   },
   {
     "id": "qwen2",
     "title": "Qwen2 系列模型解读：架构演进与训练策略",
     "date": "2026-05-20",
     "excerpt": "全面解读 Qwen2 系列模型在架构设计、预训练策略和长上下文扩展方面的技术细节，包括 SwiGLU、GQA 等关键组件的实现分析。",
-    "tags": ["主流模型", "Qwen", "训练"]
+    "tags": [
+      "主流模型",
+      "Qwen",
+      "训练"
+    ]
   },
   {
     "id": "kimi",
     "title": "Kimi 大模型技术解析：超长上下文与 MoE 架构",
     "date": "2026-06-11",
     "excerpt": "深入分析 Kimi 大模型的核心技术方案，包括 MoE 架构设计、Ring Attention 超长上下文技术、Paged Attention 内存管理以及训练推理优化策略。",
-    "tags": ["主流模型", "Kimi", "MoE", "长上下文", "推理优化"]
+    "tags": [
+      "主流模型",
+      "Kimi",
+      "MoE",
+      "长上下文",
+      "推理优化"
+    ]
   }
 ]

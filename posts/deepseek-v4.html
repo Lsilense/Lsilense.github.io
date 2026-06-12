@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DeepSeek-V4 技术解析 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
+.post-detail .p-body .bench-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .bench-table th, .post-detail .p-body .bench-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .bench-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .bench-table td { background: var(--code-bg); }
+.post-detail .p-body .bench-table .highlight { color: var(--copper-light); font-weight: 600; }
+.post-detail .p-body .arch-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .arch-table th, .post-detail .p-body .arch-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .arch-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .arch-table td { background: var(--code-bg); text-align: left; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>DeepSeek-V4 技术解析：百万 Token 上下文与混合注意力架构</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 12 日</span>
+      <span>🏷️ <a href="../posts.html?tag=DeepSeek" style="color:var(--copper-light)">DeepSeek</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>2026 年 4 月 24 日，DeepSeek 发布了下一代旗舰模型 DeepSeek-V4，这是对 V3 系列（V3/V3.1/V3.2）的全面重新设计。V4 在架构层面做出了多项根本性改变——<strong>废弃了沿用两代的 MLA 注意力机制</strong>，代之以全新的混合稀疏注意力（CSA + HCA）；<strong>重构了残差连接</strong>，引入流形约束超连接（mHC）；<strong>优化器从 AdamW 切换为 Muon</strong>；并在后训练阶段采用<strong>独立培养 + 统一融合</strong>的双阶段范式。</p>
+
+<p>V4 系列包含两个模型：<strong>V4-Pro</strong>（1.6T 总参数，49B 激活参数）和<strong>V4-Flash</strong>（284B 总参数，13B 激活参数），均于发布当日在 Hugging Face 以 MIT 协议开源。模型的默认上下文长度从 V3 的 128K 跃升至 <strong>1M tokens</strong>，在推理效率上实现了数量级的提升——在 1M 上下文下，V4-Pro 的 KV Cache 仅为 V3.2 的 <strong>10%</strong>。本文将系统解析 DeepSeek-V4 的全部核心创新。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>技术报告：</strong>DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence<br>
+<a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro" target="_blank" style="color:var(--copper-light)">Hugging Face · deepseek-ai/DeepSeek-V4-Pro</a>
+</p>
+
+<h2>模型规格</h2>
+
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>规格</th>
+      <th>DeepSeek-V3</th>
+      <th>DeepSeek-V4-Pro</th>
+      <th>DeepSeek-V4-Flash</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>总参数</td>
+      <td>671B</td>
+      <td class="highlight">1.6T</td>
+      <td>284B</td>
+    </tr>
+    <tr>
+      <td>激活参数 / token</td>
+      <td>37B</td>
+      <td class="highlight">49B</td>
+      <td>13B</td>
+    </tr>
+    <tr>
+      <td>注意力机制</td>
+      <td>MLA</td>
+      <td class="highlight">CSA + HCA 混合</td>
+      <td>CSA + HCA 混合</td>
+    </tr>
+    <tr>
+      <td>残差连接</td>
+      <td>标准残差</td>
+      <td class="highlight">mHC（流形约束超连接）</td>
+      <td>mHC</td>
+    </tr>
+    <tr>
+      <td>优化器</td>
+      <td>AdamW</td>
+      <td class="highlight">Muon</td>
+      <td>Muon</td>
+    </tr>
+    <tr>
+      <td>MoE 路由</td>
+      <td>标准 Top-K</td>
+      <td class="highlight">前 3 层 Hash-MoE + 标准路由</td>
+      <td>前 3 层 Hash-MoE + 标准路由</td>
+    </tr>
+    <tr>
+      <td>默认上下文</td>
+      <td>128K</td>
+      <td class="highlight">1M</td>
+      <td>1M</td>
+    </tr>
+    <tr>
+      <td>精度</td>
+      <td>FP8</td>
+      <td class="highlight">FP4 + FP8 混合</td>
+      <td>FP4 + FP8 混合</td>
+    </tr>
+    <tr>
+      <td>层数</td>
+      <td>—</td>
+      <td>61</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>训练数据</td>
+      <td>14.8T tokens</td>
+      <td class="highlight">33T tokens</td>
+      <td>32T tokens</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>架构总览：从 V3 到 V4</h2>
+<p>DeepSeek-V4 的架构与 V3 有本质区别。V3 的核心设计（MLA + DeepSeekMoE + 残差连接 + AdamW）在 V4 中被全部替换或重构。下图展示 V4-Pro 单个 Transformer Block 的内部结构：</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Input["输入 hₜ"]
+        IN[("Hidden State<br/>d = 7168")]
+    end
+
+    subgraph HC1["mHC 前处理"]
+        HC1_A["Hyper-Connection<br/>n_hc = 4 并行流<br/>Birkhoff 投影"]
+        IN --> HC1_A
+    end
+
+    subgraph Attention["混合注意力"]
+        direction TB
+        CSA["CSA: Compressed Sparse Attention<br/>m=4 tokens → 1 KV entry<br/>Lightning Indexer 选择 Top-K"]
+        HCA["HCA: Heavily Compressed Attention<br/>m'=128 tokens → 1 KV entry<br/>全局稠密注意力"]
+        HC1_A --> CSA
+        HC1_A --> HCA
+    end
+
+    subgraph HC2["mHC 中处理"]
+        HC2_A["流形约束合并<br/>残差 + 注意力输出"]
+        CSA --> HC2_A
+        HCA --> HC2_A
+    end
+
+    subgraph MoE["DeepSeekMoE"]
+        direction TB
+        ROUTE["Hash-MoE (前 3 层)<br/>或标准路由 (其余层)"]
+        EXP["MoE Experts<br/>FP4 精度"]
+        HC2_A --> ROUTE --> EXP
+    end
+
+    subgraph HC3["mHC 后处理"]
+        HC3_A["流形约束合并<br/>残差 + FFN 输出<br/>→ 下一层"]
+        EXP --> HC3_A
+    end
+
+    HC3_A --> OUT[("输出 hₜ'<br/>→ 下一 Block")]
+</div>
+<p class="diagram-caption">图 1：DeepSeek-V4-Pro 单个 Transformer Block — 输入经 mHC 扩展为 4 并行流，经 CSA/HCA 混合注意力后通过 MoE，再经 mHC 合并输出</p>
+
+<h2>核心创新一：混合注意力 CSA + HCA</h2>
+<p>V4 最大的架构变化是<strong>完全弃用 MLA</strong>，代之以两种新的注意力机制的混合——压缩稀疏注意力（Compressed Sparse Attention, CSA）和重度压缩注意力（Heavily Compressed Attention, HCA）。</p>
+
+<h3>CSA：压缩稀疏注意力</h3>
+<p>CSA 首先对 KV 序列进行块级压缩，每 $m = 4$ 个连续的 Token 经 <strong>Softmax 门控池化</strong>合并为 1 个 KV 条目（存在 2m 个位置的块间重叠以保证边界连续性）。在查询时，一个运行在 FP4 精度的 Lightning Indexer 通过 ReLU 点积为每个查询选择最相关的压缩 KV 块：</p>
+
+<div class="formula-block">
+$$
+\mathbf{k}_j^C = \text{Pool}(\mathbf{k}_{m \cdot j : m \cdot (j+1)}), \quad
+\mathbf{v}_j^C = \text{Pool}(\mathbf{v}_{m \cdot j : m \cdot (j+1)})
+$$
+
+$$
+\text{idx}_t = \text{TopK}\left( \text{ReLU}(\mathbf{q}_t^\top \mathbf{K}^C) \right)
+$$
+</div>
+
+<p>经过 4 倍压缩后，Lightning Indexer 进一步从 $\frac{L}{4}$ 个压缩块中选择 Top-K 个参与注意力计算。这使得有效计算量仅随序列长度亚线性增长。</p>
+
+<h3>HCA：重度压缩注意力</h3>
+<p>HCA 的思想与 CSA 相似但更为激进——每 $m' = 128$ 个 Token 压缩为 1 个 KV 条目，不设索引器，每个查询与所有压缩条目进行<strong>全局稠密注意力</strong>。在 1M Token 的上下文中，HCA 仅产生约 7,813 个 KV 条目，使全局注意力也能高效计算。</p>
+
+<h3>层间交织模式</h3>
+<p>V4-Pro（61 层）的注意力层按以下模式交织：</p>
+<ul>
+  <li><strong>层 0-1</strong>：仅 HCA（浅层用全局感知建立表征）</li>
+  <li><strong>层 2-60</strong>：CSA 与 HCA 交替排列</li>
+  <li><strong>MTP Block</strong>：仅滑动窗口注意力</li>
+</ul>
+
+<p>这种设计的核心思路是：<strong>用 CSA 的高效稀疏选择处理大部分层次，用 HCA 的全局感知保证信息覆盖无盲区</strong>。两者互补，在 1M 上下文下将单次推理的 FLOPs 降至 V3.2 的 <strong>27%</strong>，KV Cache 降至 <strong>10%</strong>。</p>
+
+<div class="mermaid">
+flowchart LR
+    subgraph V4_Attn["V4 混合注意力 (1M context)"]
+        direction TB
+        COMPRESS["序列压缩"] --> CSA_PATH["CSA: m=4 → 250K 条目<br/>Lightning Indexer → Top-K<br/>稀疏选择"]
+        COMPRESS --> HCA_PATH["HCA: m'=128 → 7,813 条目<br/>全局稠密注意力"]
+    end
+
+    subgraph V3_Attn["V3 MLA (128K context)"]
+        V3_MLA["MLA 低秩压缩<br/>128K 条目<br/>无稀疏选择"]
+    end
+
+    subgraph Resource["资源对比 @1M"]
+        R1["V4-Pro FLOPs: 27% of V3.2"]
+        R2["V4-Pro KV Cache: 10% of V3.2"]
+        R3["≈ GQA-8 的 2% KV Cache"]
+    end
+
+    V4_Attn --> Resource
+</div>
+<p class="diagram-caption">图 2：CSA + HCA 混合注意力 — CSA 处理细粒度选择，HCA 保证全局覆盖。V4 在 1M 上下文下 KV Cache 仅为 V3.2 的 1/10</p>
+
+<h2>核心创新二：流形约束超连接（mHC）</h2>
+<p>V4 用流形约束超连接（manifold-Constrained Hyper-Connections, mHC）替代了 Transformer 的标准残差连接。残差连接 $\mathbf{h}' = \mathbf{h} + f(\mathbf{h})$ 在深层网络中信号传播仍可能发散，而 mHC 从原理上保证了谱范数不超过 1。</p>
+
+<p>mHC 的核心思想是将残差流从单一的 $d$ 维向量扩展为 $n_{\text{hc}}$ 个并行流（V4 中 $n_{\text{hc}} = 4$），并在每个 Block 前后通过映射矩阵在这 4 个流之间进行混合。映射矩阵经过 <strong>Sinkhorn-Knopp 算法迭代投影到 Birkhoff 多面体</strong>（双随机矩阵集合），从而保证谱范数有界为 1：</p>
+
+<div class="formula-block">
+$$
+\mathbf{h}_t^{(1)}, \mathbf{h}_t^{(2)}, \mathbf{h}_t^{(3)}, \mathbf{h}_t^{(4)} = \text{Split}(\mathbf{h}_t)
+$$
+
+$$
+\hat{\mathbf{h}}_t^{(i)} = \sum_{j=1}^{n_{\text{hc}}} M_{ij}^{\text{attn}} \cdot \mathbf{h}_t^{(j)} + \text{Attn}_i(\mathbf{h}_t^{(i)})
+$$
+
+$$
+\mathbf{h}_t'^{(i)} = \sum_{j=1}^{n_{\text{hc}}} M_{ij}^{\text{ffn}} \cdot \hat{\mathbf{h}}_t^{(j)} + \text{FFN}_i(\mathbf{h}_t^{(i)})
+$$
+
+$$
+\mathbf{h}_t' = \text{Concat}(\mathbf{h}_t'^{(1)}, \mathbf{h}_t'^{(2)}, \mathbf{h}_t'^{(3)}, \mathbf{h}_t'^{(4)})
+$$
+</div>
+
+<p>其中 $M^{\text{attn}}, M^{\text{ffn}} \in \mathbb{R}^{4 \times 4}$ 是经 Birkhoff 投影的混合矩阵。这一设计确保了即使在 61 层的深层网络中，信号既不会爆炸也不会消失，是 V4 能够扩展到 1.6T 参数且训练稳定的关键保证之一。</p>
+
+<h2>核心创新三：Hash-MoE 启动</h2>
+<p>V4 在 MoE 路由上引入了<strong>哈希启动（Hash Bootstrap）</strong>设计。前 3 层不使用权重的可学习路由器，而是使用一个静态的 <code>token_id → expert_id</code> 哈希表将 token 均匀分配到各个专家：</p>
+
+<div class="formula-block">
+$$
+\text{expert\_id}_t = \text{Hash}(\text{token\_id}_t) \bmod N_{\text{experts}}
+$$
+</div>
+
+<p>这种设计消除了前 3 层在训练初期路由不稳定的问题，确保所有专家从一开始就获得均匀的训练信号。从第 4 层开始，恢复到标准的可学习 Top-K 路由。这种哈希引导的训练稳定性设计，结合可学习偏置的负载均衡，使得 V4 在整个 33T Token 的训练过程中保持了出色的稳定性。</p>
+
+<h2>核心创新四：Muon 优化器</h2>
+<p>V4 将优化器从 V3 的 AdamW 切换为 <strong>Muon</strong>。Muon 的核心思想是使用混合 Newton-Schulz 迭代对权重矩阵进行正交化，使更新方向更接近自然梯度：</p>
+
+<div class="formula-block">
+$$
+\Delta W_{\text{Muon}} = \text{Orthogonalize}(\nabla_W \mathcal{L}) \cdot \eta
+$$
+</div>
+
+<p>这种正交化使 Muon 在 Transformer 训练中收敛更快，尤其适合 MoE 这种大矩阵密集的场景。AdamW 仅在以下参数上保留：Embedding 层、预测头（Output Head）、mHC 参数和 RMSNorm 权重。</p>
+
+<pre><code># Muon 优化器核心逻辑（简化）
+def muon_step(param, grad, lr):
+    # 对权重矩阵进行正交化
+    u, s, v = svd(grad)
+    # Newton-Schulz 迭代逼近正交化
+    orthogonalized = newton_schulz(grad, iterations=5)
+    param -= lr * orthogonalized</code></pre>
+
+<h2>FP4 量化训练</h2>
+<p>V4 在 V3 FP8 的基础上更进一步，将 MoE 专家权重和 Indexer 的 Query/Key 路径量化到 <strong>FP4</strong>。非专家计算（Attention 的非稀疏部分、LayerNorm 等）仍保持 FP8。FP4 量化感知训练（QAT）在预训练阶段即集成，而非后训练量化，确保了量化后的模型精度无损。这是 V4 能以 1.6T 参数实现高效部署的关键——FP4 专家权重使模型的显存需求仅为同等规模 FP8 模型的一半。</p>
+
+<h2>训练管线：独立培养 + 统一融合</h2>
+<p>V4 的后训练阶段采用了全新的<strong>双阶段范式</strong>，替代了传统的 SFT → RL 单链流程：</p>
+
+<h3>阶段 1：独立培养（Independent Cultivation）</h3>
+<p>在不同领域（数学、代码、科学推理、写作、对话等）上分别训练独立的领域专家模型。每个领域使用自己的 SFT 数据和 GRPO 奖励信号，培养出在该领域具有深度专长的小模型。约训练了 <strong>10 个</strong>独立的领域教师模型。</p>
+
+<h3>阶段 2：统一融合（Unified Consolidation）</h3>
+<p>通过 on-policy 蒸馏将这 10 个教师模型的知识融合回单一 V4 模型。被蒸馏模型在各类任务上生成输出，教师模型提供对比信号。这种「分别训练 + 统一蒸馏」的策略避免了多任务联合 RL 中的梯度冲突问题，使最终模型在每个领域都接近该领域教师模型的水平。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Base["V4-Base 预训练<br/>33T tokens"]
+        BASE["1.6T MoE<br/>FP4 + FP8 QAT"]
+    end
+
+    subgraph Cultivation["阶段 1: 独立培养"]
+        M1["数学专家<br/>SFT + GRPO"]
+        M2["代码专家<br/>SFT + GRPO"]
+        M3["推理专家<br/>SFT + GRPO"]
+        M4["写作专家<br/>SFT + GRPO"]
+        M10["... 其他领域"]
+        BASE --> M1 & M2 & M3 & M4 & M10
+    end
+
+    subgraph Consolidation["阶段 2: 统一融合"]
+        DISTILL["On-Policy 蒸馏<br/>10 教师 → 1 学生"]
+        RL["最终多目标 RL<br/>推理 + 通用偏好"]
+        DISTILL --> RL
+    end
+
+    M1 & M2 & M3 & M4 & M10 --> DISTILL
+    RL --> V4["DeepSeek-V4-Pro</br>🚀 发布 (Preview)"]
+</div>
+<p class="diagram-caption">图 3：V4 后训练管线 — 独立培养领域专家后通过 on-policy 蒸馏统一融合。DSec 平台支持单集群数十万并发沙箱用于 agent 训练</p>
+
+<p>为了实现这一大规模 agent 训练流程，DeepSeek 构建了 <strong>DSec（DeepSeek Elastic Compute）</strong>平台——一个基于 Rust 的弹性计算平台，支持函数调用、容器、Firecracker microVM 和 QEMU 全虚拟化四种执行基底，单集群可运行数十万并发沙箱，通过分层的 3FS 存储实现快速镜像加载。</p>
+
+<h2>推理模式</h2>
+<p>V4 不再区分独立的「基座模型」和「推理模型」。相反，V4-Pro 和 V4-Flash 都支持三种推理模式：</p>
+<ul>
+  <li><strong>Non-Think</strong>：无思维链，快速响应，适用于简单对话和查询</li>
+  <li><strong>Think High</strong>：在 <code>&lt;think&gt;</code> 标签内输出显式推理链，适用于大多数任务</li>
+  <li><strong>Think Max</strong>：最大推理努力，需要至少 384K 上下文窗口，专攻复杂数学和代码问题</li>
+</ul>
+<p>这一设计延续了 V3.1 开始的混合推理模式，使得单一权重即可覆盖从即时聊天到深度推理的全场景。</p>
+
+<h2>性能表现</h2>
+<p>V4-Pro 在广泛基准上进行了评测。以下是与领先闭源模型的关键对比（Think Max 模式）：</p>
+
+<table class="bench-table">
+  <thead>
+    <tr>
+      <th>基准</th>
+      <th>DeepSeek-V4-Pro</th>
+      <th>Claude Opus 4.6</th>
+      <th>GPT-5.4</th>
+      <th>Gemini 3.1 Pro</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>SWE-Bench Verified</td>
+      <td class="highlight">80.6%</td>
+      <td>80.8%</td>
+      <td>—</td>
+      <td>80.6%</td>
+    </tr>
+    <tr>
+      <td>LiveCodeBench Pass@1</td>
+      <td class="highlight">93.5%</td>
+      <td>88.8%</td>
+      <td>—</td>
+      <td>91.7%</td>
+    </tr>
+    <tr>
+      <td>Codeforces Rating</td>
+      <td class="highlight">3206</td>
+      <td>—</td>
+      <td>3168</td>
+      <td>3052</td>
+    </tr>
+    <tr>
+      <td>AIME 2026</td>
+      <td class="highlight">94.3%</td>
+      <td>92.1%</td>
+      <td>91.7%</td>
+      <td>89.5%</td>
+    </tr>
+    <tr>
+      <td>Putnam 2025</td>
+      <td class="highlight">120/120</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>MMLU-Pro</td>
+      <td>87.5%</td>
+      <td>89.1%</td>
+      <td>87.5%</td>
+      <td class="highlight">91.0%</td>
+    </tr>
+    <tr>
+      <td>GPQA Diamond</td>
+      <td>90.1%</td>
+      <td>91.3%</td>
+      <td>93.0%</td>
+      <td class="highlight">94.3%</td>
+    </tr>
+    <tr>
+      <td>MCPAtlas Public</td>
+      <td>73.6%</td>
+      <td>73.8%</td>
+      <td>67.2%</td>
+      <td>69.2%</td>
+    </tr>
+    <tr>
+      <td>MRCR 1M (长上下文)</td>
+      <td>83.5%</td>
+      <td class="highlight">92.9%</td>
+      <td>—</td>
+      <td>76.3%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>V4-Pro 的最强领域在<strong>代码和数学推理</strong>——Codeforces Elo 3206 是 AI 模型的历史最高分，Putnam 2025 满分 120/120 也是首次有模型实现。在通用知识（MMLU-Pro、GPQA）和小样本长上下文检索（MRCR 1M）上不及领先闭源模型，DeepSeek 自身评估 V4 在通用知识上落后前沿约 3-6 个月。</p>
+
+<h2>开源与部署</h2>
+<p>DeepSeek-V4 以 MIT 协议完全开源，包含完整权重和推理代码：</p>
+<ul>
+  <li><strong>Hugging Face：</strong><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro" target="_blank" style="color:var(--copper-light)">deepseek-ai/DeepSeek-V4-Pro</a> · <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash" target="_blank" style="color:var(--copper-light)">deepseek-ai/DeepSeek-V4-Flash</a></li>
+  <li><strong>Hugging Face Transformers：</strong>自 4.56.0 版本起原生支持 <code>DeepseekV4Model</code></li>
+  <li><strong>推理框架：</strong>SGLang 和 vLLM 均已支持 V4 的 CSA/HCA 优化</li>
+  <li><strong>V4-Flash：</strong>284B / 13B 激活，适合在消费级 GPU 上部署</li>
+  <li><strong>Think Max 模式</strong>需要在 API 调用中设置，本地部署时需确保上下文窗口 ≥ 384K</li>
+</ul>
+
+<h2>总结</h2>
+<p>DeepSeek-V4 是 DeepSeek 产品线的一次根本性架构升级。它没有延续 V3 的设计路线，而是做出了多个大胆的架构选择：废弃 MLA、用 mHC 替代残差连接、用 Muon 替代 AdamW、引入 FP4 量化——每一个都是核心基础设施级别的改动。最终，1.6T 参数的 V4-Pro 在代码和数学推理上达到了开源模型的最高水平，1M 默认上下文和混合推理模式使其在长文档理解和 Agent 任务上具备了独特的竞争力。</p>
+
+<p>作为 Preview 版本发布，V4 的技术报告全文已在 Hugging Face 开放。社区的复现工作和下游优化预计将在未来几个月内逐步落地。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">DeepSeek</span>
+      <span class="p-tag">CSA</span>
+      <span class="p-tag">HCA</span>
+      <span class="p-tag">长上下文</span>
+      <span class="p-tag">MoE</span>
+      <span class="p-tag">Muon</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

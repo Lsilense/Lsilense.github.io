@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DeepSeek-R1 技术解析 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
+.post-detail .p-body .bench-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .bench-table th, .post-detail .p-body .bench-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .bench-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .bench-table td { background: var(--code-bg); }
+.post-detail .p-body .bench-table .highlight { color: var(--copper-light); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>DeepSeek-R1 技术解析：强化学习激发推理能力</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 12 日</span>
+      <span>🏷️ <a href="../posts.html?tag=DeepSeek" style="color:var(--copper-light)">DeepSeek</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>2025 年 1 月，DeepSeek 发布了 DeepSeek-R1 系列模型，首次系统性地验证了<strong>纯强化学习（Reinforcement Learning, RL）即可激发大语言模型的深度推理能力</strong>。这一发现挑战了"复杂推理能力必须依赖大规模人工标注数据"的传统认知。</p>
+
+<p>R1 系列包含两个关键版本：<strong>R1-Zero</strong>（纯 RL，无监督数据）和<strong>DeepSeek-R1</strong>（冷启动 SFT + 多阶段 RL）。两者均基于 DeepSeek-V3-Base 模型，通过 Group Relative Policy Optimization（GRPO）算法在数学和代码等推理密集型任务上进行训练。R1-Zero 在训练过程中自发产生了自我验证、回溯纠错等高级推理行为——论文称之为"顿悟时刻"（Aha Moment）。R1 在此基础上进一步提升了输出可读性和综合能力，最终在 AIME 2024 数学推理上以 79.8% 的 pass@1 超越 OpenAI o1-0912（79.2%），且全程使用 MIT 协议开源。</p>
+
+<p>更重要的是，R1 展示了<strong>推理能力的可迁移性</strong>——通过将 R1 生成的推理轨迹蒸馏到小模型（1.5B-70B），蒸馏版模型在数学推理上即可超越 GPT-4 等大模型。本文将从训练管线、RL 算法、涌现行为和蒸馏技术四个维度深入解析 DeepSeek-R1。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>论文：</strong>DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning<br>
+<a href="https://arxiv.org/abs/2501.12948" target="_blank" style="color:var(--copper-light)">https://arxiv.org/abs/2501.12948</a> · arXiv:2501.12948
+</p>
+
+<h2>训练管线总览</h2>
+<p>DeepSeek-R1 的训练管线由两条路径组成。R1-Zero 路径验证了"仅靠 RL 就能产生推理能力"的假设，而 R1 路径通过引入少量冷启动数据解决了可读性和语言混合等问题，实现了实用化的推理模型。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph BaseModel["基座模型"]
+        BASE["DeepSeek-V3-Base<br/>671B MoE, 37B 激活<br/>预训练完成"]
+    end
+
+    subgraph PathZero["R1-Zero 路径（纯 RL）"]
+        direction TB
+        Z0["GRPO 强化学习"] --> Z1["仅 Accuracy + Format 奖励"]
+        Z1 --> Z2["模型自发学会<br/>自我验证、回溯、纠错"]
+        Z2 --> Z3["R1-Zero<br/>✅ 推理能力强<br/>❌ 可读性差、语言混合"]
+    end
+
+    subgraph PathFull["DeepSeek-R1 路径（冷启动 + 多阶段）"]
+        direction TB
+        F1["冷启动 SFT<br/>数千条精选 CoT 示例"] --> F2["推理导向 RL<br/>GRPO + Accuracy/Format 奖励"]
+        F2 --> F3["拒绝采样 + SFT<br/>生成 80 万条推理轨迹<br/>过滤并结合通用 SFT 数据"]
+        F3 --> F4["全场景 RL<br/>推理: Accuracy + Format<br/>通用: 人类偏好奖励模型"]
+        F4 --> F5["DeepSeek-R1<br/>✅ 推理能力强<br/>✅ 可读性好、通用能力均衡"]
+    end
+
+    BASE --> PathZero
+    BASE --> PathFull
+</div>
+<p class="diagram-caption">图 1：DeepSeek-R1 训练管线 — R1-Zero（纯 RL）验证推理涌现，R1（冷启动 + 多阶段 RL）实现实用化</p>
+
+<h2>核心算法：GRPO</h2>
+<p>R1 系列采用 Group Relative Policy Optimization（GRPO）作为 RL 算法。GRPO 是 PPO（Proximal Policy Optimization）的简化变体，核心创新在于<strong>用群体内奖励归一化替代独立的价值函数（Critic）模型</strong>，将 RL 训练的显存占用降低约一半。</p>
+
+<h3>算法流程</h3>
+<p>对于每个 prompt $q$，GRPO 从当前策略 $\pi_\theta$ 中采样一组 $G$ 个响应 $\{o_1, o_2, ..., o_G\}$，每个响应通过奖励函数得到分数 $r_i$。第 $i$ 个响应的优势值（Advantage）计算为组内归一化奖励：</p>
+
+<div class="formula-block">
+$$
+A_i = \frac{r_i - \text{mean}(\{r_1, ..., r_G\})}{\text{std}(\{r_1, ..., r_G\})}
+$$
+</div>
+
+<p>GRPO 的优化目标为：</p>
+
+<div class="formula-block">
+$$
+\mathcal{J}_{\text{GRPO}}(\theta) = \mathbb{E}_{q \sim P(Q), \{o_i\} \sim \pi_{\theta_{\text{old}}}} \left[ \frac{1}{G} \sum_{i=1}^G \left( \min\left( \frac{\pi_\theta(o_i|q)}{\pi_{\theta_{\text{old}}}(o_i|q)} A_i, \text{clip}\left( \frac{\pi_\theta(o_i|q)}{\pi_{\theta_{\text{old}}}(o_i|q)}, 1-\epsilon, 1+\epsilon \right) A_i \right) - \beta \mathbb{D}_{\text{KL}}(\pi_\theta \| \pi_{\text{ref}}) \right) \right]
+$$
+</div>
+
+<p>其中第一项是 PPO 风格的概率比裁剪，防止单次更新过大；第二项 $\beta \mathbb{D}_{\text{KL}}$ 是对参考策略 $\pi_{\text{ref}}$ 的 KL 散度惩罚，防止策略偏离过远和奖励破解（Reward Hacking）。</p>
+
+<p>GRPO 相比标准 PPO 省去了同等规模的 Critic 网络，显著降低了 RL 训练的内存开销，这对于 671B 参数的超大规模模型尤为重要。</p>
+
+<h3>奖励设计</h3>
+<p>R1 的奖励系统极为精简，仅包含两类信号：</p>
+<ul>
+  <li><strong>Accuracy Reward（正确性奖励）</strong>：数学题验证最终答案是否匹配标准解；代码题通过编译和测试用例判断是否正确。奖励值为 0 或 1。</li>
+  <li><strong>Format Reward（格式奖励）</strong>：强制模型将推理过程放在 <code>&lt;think&gt;</code> 标签内。这一简单的格式约束使得模型的推理链和最终答案可以明确区分。</li>
+</ul>
+
+<div class="mermaid">
+flowchart LR
+    subgraph GRPO["GRPO 一次迭代"]
+        direction TB
+        PROMPT["Prompt q"] --> SAMPLE["采样 G 个响应<br/>o₁, o₂, ..., oᴳ"]
+        SAMPLE --> REWARD["计算奖励 r₁, r₂, ..., rᴳ<br/>Accuracy + Format"]
+        REWARD --> ADVANTAGE["组内归一化<br/>Aᵢ = (rᵢ - μ) / σ"]
+        ADVANTAGE --> UPDATE["策略更新<br/>最大化 GRPO 目标<br/>+ KL 散度约束"]
+    end
+</div>
+<p class="diagram-caption">图 2：GRPO 迭代流程 — 每组 G 个响应内归一化优势值，无需 Critic 网络</p>
+
+<pre><code># GRPO 简化实现
+def grpo_step(policy, ref_policy, prompts, reward_fn, group_size=64):
+    # 采样 G 个响应
+    responses = [policy.generate(p) for p in prompts * group_size]
+    # 计算奖励
+    rewards = reward_fn(responses)
+    # 组内归一化（按 prompt 分组）
+    rewards = rewards.reshape(-1, group_size)
+    advantages = (rewards - rewards.mean(-1, keepdim=True)) / rewards.std(-1, keepdim=True)
+    # 计算策略梯度（含 KL 正则化）
+    ratios = policy.log_prob(responses) - ref_policy.log_prob(responses)
+    loss = -min(ratios * advantages, clip(ratios, 1-ε, 1+ε) * advantages)
+    loss += β * kl_divergence(policy, ref_policy)
+    return loss.backward()</code></pre>
+
+<h2>R1-Zero：纯 RL 的「顿悟时刻」</h2>
+<p>R1-Zero 的发现极具启发性——在完全不使用任何监督数据的情况下，仅通过 GRPO 和结果正确性奖励，模型便自发学会了复杂的推理策略。</p>
+
+<h3>涌现的推理行为</h3>
+<p>训练过程中，R1-Zero 的思维链长度（CoT Length）持续增长，表明模型正在<strong>自动学习"多花时间思考"</strong>。更重要的是，模型发展出了以下高级推理行为：</p>
+<ul>
+  <li><strong>自我验证（Self-Verification）</strong>：生成部分推理后进行中间检查，确认逻辑是否自洽</li>
+  <li><strong>回溯纠错（Backtracking）</strong>：意识到当前推理方向有误时，主动回退并重新开始</li>
+  <li><strong>假设检验（Hypothesis Testing）</strong>：对多种可能的解法进行尝试和比较</li>
+</ul>
+
+<p>这些行为在训练数据中从未被显式教导——RL 的奖励信号仅告诉模型"你的答案对不对"，而模型自己"悟出"了如何通过更复杂的思考过程来提升正确率。论文将这种现象称为「顿悟时刻」：</p>
+
+<blockquote style="border-left:3px solid var(--copper-light);padding:8px 16px;margin:16px 0;background:var(--code-bg);border-radius:var(--radius-md);font-style:italic">
+"During the training of R1-Zero, we observe a remarkable 'aha moment' where the model learns to allocate more thinking time to a problem by reevaluating its initial approach. This behavior is not explicitly programmed but emerges as a result of the RL training."
+</blockquote>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Step1["初始推理"]
+        A1["读取问题"] --> A2["初步推理链"]
+    end
+
+    subgraph Step2["Aha Moment ✨"]
+        B1["中断当前推理"] --> B2["'Wait... let me re-check'"]
+        B2 --> B3["重新评估中间步骤"]
+    end
+
+    subgraph Step3["修正推理"]
+        C1["发现错误/遗漏"] --> C2["回溯到问题起点"]
+        C2 --> C3["重新推导正确的推理链"]
+    end
+
+    subgraph Step4["正确输出"]
+        D1["最终答案 ✅"]
+    end
+
+    A2 --> B1
+    B3 --> C1
+    C3 --> D1
+</div>
+<p class="diagram-caption">图 3：R1-Zero 的「顿悟时刻」— 模型在推理过程中自发学会暂停、回溯并重新评估已有推理，这一行为完全由 RL 奖励信号涌现而来</p>
+
+<h3>局限</h3>
+<p>R1-Zero 虽然推理能力强劲（AIME 2024 pass@1 达 71.0%），但存在两个主要问题：</p>
+<ul>
+  <li><strong>可读性差</strong>：推理链中混杂多种语言（中英混写），缺乏结构化表达</li>
+  <li><strong>通用能力不足</strong>：仅针对推理任务优化，在写作、翻译等通用任务上表现不佳</li>
+</ul>
+<p>这些问题促使了 DeepSeek-R1 的诞生。</p>
+
+<h2>DeepSeek-R1：冷启动 + 多阶段训练</h2>
+<p>DeepSeek-R1 在 R1-Zero 的基础上增加了冷启动数据和多阶段训练，解决了纯 RL 路径的两大局限。完整的训练流程分为四个阶段：</p>
+
+<h3>阶段 1：冷启动 SFT</h3>
+<p>从 R1-Zero 的中间检查点中筛选出数千条高<strong>可读性</strong>的 CoT 示例，人工精选为冷启动数据集。用这些数据对 V3-Base 进行监督微调，使模型学会生成结构化、语言一致的推理过程。</p>
+
+<h3>阶段 2：推理导向 RL</h3>
+<p>在冷启动模型上运行与 R1-Zero 相同的 GRPO 训练，使用 Accuracy + Format 奖励。这一阶段主要提升推理正确率，维持输出的可读性。</p>
+
+<h3>阶段 3：拒绝采样 + 通用 SFT</h3>
+<p>利用阶段 2 的模型大规模生成推理轨迹（约 80 万条），通过拒绝采样（Rejection Sampling）只保留最终答案正确的样本。将这些高质推理数据与通用领域的 SFT 数据（写作、翻译、问答等）合并，进行第二阶段的监督微调。这一步的关键在于：<strong>推理能力通过 SFT 即可迁移到通用数据上</strong>，无需对每个通用任务单独运行 RL。</p>
+
+<h3>阶段 4：全场景 RL</h3>
+<p>最终阶段结合推理任务和通用任务进行多目标 RL：</p>
+<ul>
+  <li><strong>推理任务</strong>：继续使用 Accuracy + Format 奖励</li>
+  <li><strong>通用任务</strong>：引入人类偏好奖励模型（Reward Model），用于评估 helpfulness 和 harmlessness</li>
+</ul>
+
+<div class="mermaid">
+flowchart TB
+    subgraph S1["Stage 1: Cold-Start SFT"]
+        ST1["从 R1-Zero 检查点<br/>筛选可读性高的 CoT"] --> ST2["数千条精选数据<br/>监督微调"]
+    end
+
+    subgraph S2["Stage 2: Reasoning RL"]
+        ST3["GRPO 训练<br/>Accuracy + Format 奖励"] --> ST4["推理能力大幅提升"]
+    end
+
+    subgraph S3["Stage 3: Rejection Sampling + SFT"]
+        ST5["生成 80 万推理轨迹"] --> ST6["Rejection Sampling<br/>保留正确答案样本"]
+        ST6 --> ST7["融合通用 SFT 数据<br/>联合训练"]
+    end
+
+    subgraph S4["Stage 4: Full RL"]
+        ST8["推理: Accuracy + Format"] --> ST9["多目标 RL"]
+        ST10["通用: 人类偏好 RM"] --> ST9
+    end
+
+    BASE["V3-Base"] --> S1 --> S2 --> S3 --> S4 --> R1["DeepSeek-R1"]
+</div>
+<p class="diagram-caption">图 4：DeepSeek-R1 四阶段训练管线 — 冷启动 → 推理 RL → 拒绝采样 + SFT → 全场景 RL</p>
+
+<h2>知识蒸馏</h2>
+<p>DeepSeek-R1 的蒸馏实验是论文中最具实际影响力的成果之一。研究表明，<strong>通过在 R1 生成的推理轨迹上进行监督微调</strong>，参数量仅 1.5B-32B 的小模型即可获得强大的推理能力，甚至在部分数学基准上超越 GPT-4 等大模型。</p>
+
+<p>蒸馏过程极为简洁：使用 R1 生成约 80 万条推理轨迹（覆盖数学、代码、科学推理等），直接在小型基座模型（Qwen-2.5 系列、Llama-3 系列）上进行 SFT，<strong>无需任何 RL 阶段</strong>。</p>
+
+<h3>AIME 2024 蒸馏结果</h3>
+
+<table class="bench-table">
+  <thead>
+    <tr>
+      <th>模型</th>
+      <th>参数量</th>
+      <th>AIME 2024 pass@1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>DeepSeek-R1-Distill-Qwen-1.5B</td>
+      <td>1.5B</td>
+      <td>28.9%</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-R1-Distill-Qwen-7B</td>
+      <td>7B</td>
+      <td>55.5%</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-R1-Distill-Llama-8B</td>
+      <td>8B</td>
+      <td>50.4%</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-R1-Distill-Qwen-14B</td>
+      <td>14B</td>
+      <td>69.7%</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-R1-Distill-Qwen-32B</td>
+      <td>32B</td>
+      <td>72.6%</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-R1-Distill-Llama-70B</td>
+      <td>70B</td>
+      <td>70.2%</td>
+    </tr>
+    <tr>
+      <td class="highlight">DeepSeek-R1（完整）</td>
+      <td class="highlight">671B</td>
+      <td class="highlight">79.8%</td>
+    </tr>
+    <tr>
+      <td>OpenAI o1-0912</td>
+      <td>—</td>
+      <td>79.2%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>7B 级别的蒸馏模型（55.5%）已超越 GPT-4（约 30-40% AIME 水平），32B 模型（72.6%）接近 o1 水平。这意味着<strong>推理能力可以通过蒸馏高效迁移</strong>，小模型无需承担 RL 训练的高昂计算成本即可获得大部分推理增益。这一发现对模型部署中的性价比优化具有重要意义。</p>
+
+<h2>性能表现</h2>
+<p>DeepSeek-R1 在广泛的评测基准上进行了评估，其中数学推理和代码生成尤为突出：</p>
+
+<table class="bench-table">
+  <thead>
+    <tr>
+      <th>基准</th>
+      <th>任务类型</th>
+      <th>DeepSeek-R1</th>
+      <th>OpenAI o1-0912</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AIME 2024</td>
+      <td>数学推理</td>
+      <td class="highlight">79.8%</td>
+      <td>79.2%</td>
+    </tr>
+    <tr>
+      <td>MATH-500</td>
+      <td>数学推理</td>
+      <td class="highlight">97.3%</td>
+      <td>96.4%</td>
+    </tr>
+    <tr>
+      <td>MMLU</td>
+      <td>知识理解</td>
+      <td>90.8%</td>
+      <td class="highlight">91.8%</td>
+    </tr>
+    <tr>
+      <td>GPQA Diamond</td>
+      <td>科学推理</td>
+      <td>71.5%</td>
+      <td class="highlight">75.7%</td>
+    </tr>
+    <tr>
+      <td>LiveCodeBench</td>
+      <td>代码生成</td>
+      <td class="highlight">65.9%</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>SWE-bench Verified</td>
+      <td>软件工程</td>
+      <td>49.2%</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>在 AIME 2024 和 MATH-500 等数学推理基准上，R1 全面超越 o1；在知识类基准（MMLU、GPQA）上略微落后，反映了当前推理增强模型在通用知识保留方面的取舍。值得注意的是，R1-Zero 在 AIME 2024 上已达到 71.0%，展现了纯 RL 路线的巨大潜力。</p>
+
+<h2>开源与部署</h2>
+<p>DeepSeek-R1 系列模型以 MIT 协议完全开源，包含完整权重和推理代码：</p>
+<ul>
+  <li><strong>GitHub：</strong><a href="https://github.com/deepseek-ai/DeepSeek-R1" target="_blank" style="color:var(--copper-light)">github.com/deepseek-ai/DeepSeek-R1</a></li>
+  <li><strong>Hugging Face：</strong>deepseek-ai/DeepSeek-R1（完整 671B）；deepseek-ai/DeepSeek-R1-Distill-Qwen-* / DeepSeek-R1-Distill-Llama-*（蒸馏版本）</li>
+  <li><strong>推理框架：</strong>通过 SGLang 和 vLLM 支持部署，蒸馏版本可在消费级 GPU（如 RTX 4090）上运行 7B/8B 模型</li>
+</ul>
+
+<h2>总结</h2>
+<p>DeepSeek-R1 的核心贡献在于系统性地论证了<strong>强化学习可以独立激发深度推理能力</strong>，而不依赖于大规模人工标注的思维链数据。R1-Zero 的"顿悟时刻"和蒸馏实验的高效迁移，分别从训练和部署两个维度为后训练阶段的推理增强提供了新的范式。</p>
+
+<p>R1 的发布也催生了 Open R1 等社区复现项目，推动了推理型 RL 训练的开源生态。蒸馏模型的强大性能——特别是 7B 级模型即可超越 GPT-4 的数学推理——使得高质量推理能力不再局限于超大模型，为更广泛的应用场景打开了可能。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">DeepSeek</span>
+      <span class="p-tag">强化学习</span>
+      <span class="p-tag">推理优化</span>
+      <span class="p-tag">GRPO</span>
+      <span class="p-tag">知识蒸馏</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
