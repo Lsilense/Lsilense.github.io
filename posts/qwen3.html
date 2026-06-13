@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Qwen3 技术解析 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
+.post-detail .p-body .bench-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .bench-table th, .post-detail .p-body .bench-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .bench-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .bench-table td { background: var(--code-bg); }
+.post-detail .p-body .bench-table .highlight { color: var(--copper-light); font-weight: 600; }
+.post-detail .p-body .arch-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .arch-table th, .post-detail .p-body .arch-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .arch-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .arch-table td { background: var(--code-bg); text-align: left; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>Qwen3 技术解析：统一思考框架与细粒度 MoE</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 13 日</span>
+      <span>🏷️ <a href="../posts.html?tag=Qwen" style="color:var(--copper-light)">Qwen</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>2025 年 5 月，阿里云 Qwen 团队发布了 Qwen3——Qwen 模型家族的最新版本。与 Qwen2.5 相比，Qwen3 在架构、训练和推理三个层面做出了关键升级：<strong>将思考模式（Thinking Mode）与非思考模式（Non-Thinking Mode）统一到单一模型框架中</strong>，用户无需切换模型即可按需控制推理深度；引入了 <strong>Thinking Budget</strong> 机制，允许用户为推理过程分配可变的 Token 预算；在 MoE 架构上沿用了细粒度专家分割设计，并增加 QK-Norm 以保证训练稳定性。</p>
+
+<p>Qwen3 系列覆盖了从 0.6B 到 235B 的广泛规模，包含 6 个密集模型和 2 个 MoE 模型。旗舰模型 <strong>Qwen3-235B-A22B</strong>（235B 总参数，22B 激活参数）在 Thinking 模式下以 AIME'24 85.7% 的成绩超越 DeepSeek-R1（79.8%），在 Non-Thinking 模式下也全面超越 Qwen2.5-72B-Instruct。全部模型以 <strong>Apache 2.0</strong> 协议开源。本文将从架构设计、多语言扩展、统一思考框架和后训练管线四个方面深入解析 Qwen3。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>论文：</strong>Qwen3 Technical Report<br>
+<a href="https://arxiv.org/abs/2505.09388" target="_blank" style="color:var(--copper-light)">https://arxiv.org/abs/2505.09388</a> · arXiv:2505.09388
+</p>
+
+<h2>模型系列概览</h2>
+<p>Qwen3 系列包含 8 个模型，覆盖从边缘设备到云端旗舰的完整场景：</p>
+
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>模型</th>
+      <th>架构</th>
+      <th>总参数</th>
+      <th>激活参数</th>
+      <th>适用场景</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Qwen3-235B-A22B</td>
+      <td>MoE</td>
+      <td>235B</td>
+      <td class="highlight">22B</td>
+      <td>旗舰模型，云端部署</td>
+    </tr>
+    <tr>
+      <td>Qwen3-30B-A3B</td>
+      <td>MoE</td>
+      <td>30B</td>
+      <td>3B</td>
+      <td>高效 MoE，性价比之选</td>
+    </tr>
+    <tr>
+      <td>Qwen3-32B</td>
+      <td>Dense</td>
+      <td>32B</td>
+      <td>32B</td>
+      <td>旗舰密集模型</td>
+    </tr>
+    <tr>
+      <td>Qwen3-14B</td>
+      <td>Dense</td>
+      <td>14B</td>
+      <td>14B</td>
+      <td>中等规模密集</td>
+    </tr>
+    <tr>
+      <td>Qwen3-8B</td>
+      <td>Dense</td>
+      <td>8B</td>
+      <td>8B</td>
+      <td>消费级 GPU 部署</td>
+    </tr>
+    <tr>
+      <td>Qwen3-4B</td>
+      <td>Dense</td>
+      <td>4B</td>
+      <td>4B</td>
+      <td>移动端 / 边缘设备</td>
+    </tr>
+    <tr>
+      <td>Qwen3-1.7B</td>
+      <td>Dense</td>
+      <td>1.7B</td>
+      <td>1.7B</td>
+      <td>超轻量部署</td>
+    </tr>
+    <tr>
+      <td>Qwen3-0.6B</td>
+      <td>Dense</td>
+      <td>0.6B</td>
+      <td>0.6B</td>
+      <td>极致轻量</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>架构设计</h2>
+<h3>密集模型架构</h3>
+<p>Qwen3 密集模型的架构与 Qwen2.5 基本一致，沿用了经过验证的关键设计：</p>
+<ul>
+  <li><strong>GQA（Grouped Query Attention）</strong>：分组查询注意力，降低 KV Cache 开销</li>
+  <li><strong>SwiGLU</strong>：门控线性单元配合 Swish 激活</li>
+  <li><strong>RoPE（Rotary Position Embedding）</strong>：旋转位置编码</li>
+  <li><strong>RMSNorm</strong>：均方根归一化，配合 Pre-Normalization 结构</li>
+</ul>
+<p>相比 Qwen2 的两处关键改进：<strong>移除了 QKV-bias</strong>，并引入了 <strong>QK-Norm</strong> 来稳定训练。</p>
+
+<h3>MoE 架构</h3>
+<p>Qwen3 的 MoE 模型沿用了 Qwen2.5-MoE 的细粒度专家分割（Fine-Grained Expert Segmentation）设计。旗舰模型 Qwen3-235B-A22B 配置为 <strong>128 个路由专家，每个 Token 激活 8 个</strong>。与 Qwen2.5-MoE 的关键区别在于<strong>去除了共享专家</strong>——所有 128 个专家均为路由专家，通过 Top-8 门控选择激活。</p>
+
+<p>MoE 模型共享密集模型的基础架构（GQA、SwiGLU、RoPE、RMSNorm），仅在前馈网络部分替换为专家路由层。这种设计使得 MoE 模型在保持与密集模型相同推理框架兼容性的同时，大幅扩展了模型容量。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Input["输入 Token"]
+        X[("Hidden State")]
+    end
+
+    subgraph SharedBase["共享基础架构"]
+        ATTN["GQA Attention<br/>+ QK-Norm<br/>+ RoPE"]
+        X --> ATTN
+    end
+
+    subgraph MoE["Mixture of Experts<br/>(每个 Transformer Block)"]
+        ROUTER["Router<br/>Top-8 门控"]
+        EXP1["Expert 1<br/>SwiGLU FFN"]
+        EXP2["Expert 2<br/>SwiGLU FFN"]
+        EXP3["Expert ..."]
+        EXP128["Expert 128<br/>SwiGLU FFN"]
+        ROUTER --> EXP1 & EXP2 & EXP3 & EXP128
+    end
+
+    subgraph Fusion["加权融合输出"]
+        F["h' = Σ gᵢ · Expertᵢ(h)<br/>gᵢ = Softmax Top-8"]
+        EXP1 --> F
+        EXP2 --> F
+        EXP3 --> F
+        EXP128 --> F
+    end
+
+    ATTN --> ROUTER
+    ATTN --> F
+    F --> OUT[("输出 → 下一层<br/>总参数 235B<br/>激活 22B / token")]
+</div>
+<p class="diagram-caption">图 1：Qwen3-235B-A22B MoE Block 架构 — 128 个细粒度专家（无共享专家），每 Token Top-8 激活，基础架构包含 GQA + QK-Norm + RoPE</p>
+
+<pre><code># Qwen3 MoE 路由示意
+def qwen3_moe_forward(x, router, experts, top_k=8):
+    # x: [batch, seq_len, d]
+    scores = router(x)                         # [batch, seq, 128]
+    top_scores, top_indices = topk(scores, top_k)
+    # 加权融合选中专家输出
+    output = 0
+    for k in range(top_k):
+        expert_out = experts[top_indices[k]](x)
+        output += expert_out * softmax(top_scores[..., k])
+    return output</code></pre>
+
+<h2>多语言扩展：从 29 到 119 种语言</h2>
+<p>Qwen3 在多语言支持上做出了显著提升，从 Qwen2.5 的 29 种语言扩展至 <strong>119 种语言和方言</strong>。在预训练数据构建上采用了多步骤策略：</p>
+<ol>
+  <li><strong>OCR 文本提取</strong>：使用 Qwen2.5-VL 模型对海量 PDF 类文档进行文字识别</li>
+  <li><strong>质量精炼</strong>：利用 Qwen2.5 对识别结果进行清洗和重写，获得数万亿高质量 Token</li>
+  <li><strong>合成数据生成</strong>：使用 Qwen2.5、Qwen2.5-Math、Qwen2.5-Coder 生成教科书、问答、代码等合成数据</li>
+  <li><strong>多语言扩展</strong>：引入额外的多语言数据，覆盖范围从 29 种扩展到 119 种</li>
+</ol>
+
+<p>在多语言评测上，Qwen3 在 MT-AIME2024（55 种语言的数学推理）上达到 80.8%，显著超过 DeepSeek-R1（73.5%），体现了在多语言推理上的领先优势。</p>
+
+<h2>核心创新：统一思考框架</h2>
+<p>Qwen3 最核心的创新在于将<strong>思考模式（Thinking）和非思考模式（Non-Thinking）融合到单一模型中</strong>。在此之前的范式是：需要推理时使用专门的推理模型（如 DeepSeek-R1、QwQ-32B），需要快速响应时使用对话模型（如 GPT-4o、DeepSeek-V3）。Qwen3 用单一权重覆盖了两种模式。</p>
+
+<h3>Thinking Budget：可控的推理深度</h3>
+<p>除模式切换外，Qwen3 还引入了 <strong>Thinking Budget</strong> 机制，用户可以为推理过程指定 Token 预算——预算越高，模型可以"思考"得越深入；预算越低，响应越快。实验表明，随着 Thinking Budget 的增加，模型在数学和代码任务上的表现持续提升。</p>
+
+<h3>模式切换机制</h3>
+<p>通过 Chat Template 和特定标志位控制：</p>
+
+<table class="bench-table">
+  <thead>
+    <tr>
+      <th>模式</th>
+      <th>用户输入</th>
+      <th>模型输出</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>思考模式</td>
+      <td><code>{query} /think</code></td>
+      <td><code>&lt;think&gt;...推理过程...&lt;/think&gt;<br>...最终响应...</code></td>
+    </tr>
+    <tr>
+      <td>非思考模式</td>
+      <td><code>{query} /no think</code></td>
+      <td><code>&lt;think&gt;&lt;/think&gt;<br>...直接响应...</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>在 Hugging Face 的 Tokenizer 中，思考模式默认启用，可以通过 <code>enable_thinking=False</code> 参数关闭。</p>
+
+<h2>后训练管线：四阶段训练</h2>
+<p>Qwen3 旗舰模型的后训练采用四阶段流程：</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph S1["Stage 1: Long-CoT Cold Start"]
+        ST1["精选长思维链数据<br/>数学、代码、逻辑推理"]
+        ST1 --> ST2["SFT：让模型学会<br/>结构化长推理"]
+    end
+
+    subgraph S2["Stage 2: Reasoning RL"]
+        ST3["GRPO 强化学习<br/>数学 + 代码奖励"]
+        ST3 --> ST4["AIME'24: 70.1 → 85.1<br/>仅 170 步 RL"]
+    end
+
+    subgraph S3["Stage 3: Thinking Mode Fusion"]
+        ST5["融合非思考数据"] --> ST6["Think / Non-Think<br/>统一 SFT"]
+        ST6 --> ST7["拒绝采样保持<br/>思考能力不退化"]
+    end
+
+    subgraph S4["Stage 4: General RL"]
+        ST8["20+ 任务奖励系统"] --> ST9["指令遵循"]
+        ST8 --> ST10["偏好对齐"]
+        ST8 --> ST11["Agent 能力"]
+        ST8 --> ST12["RAG 专用优化"]
+    end
+
+    BASE["V3-Base"] --> S1 --> S2 --> S3 --> S4 --> Q3["Qwen3-235B-A22B"]
+</div>
+<p class="diagram-caption">图 2：Qwen3 四阶段后训练管线 — 冷启动 → 推理 RL → 模式融合 → 通用 RL，实现 Thinking / Non-Thinking 双模式统一</p>
+
+<h3>Stage 1：Long-CoT Cold Start</h3>
+<p>收集涵盖数学、代码和逻辑推理的长思维链数据，通过 SFT 让模型学会结构化推理过程。此阶段为后续 RL 提供了良好的初始化起点。</p>
+
+<h3>Stage 2：Reasoning RL</h3>
+<p>使用 GRPO（Group Relative Policy Optimization）对模型进行推理强化学习。在数学和代码任务上使用基于规则的正确性奖励。Qwen3-235B-A22B 在此阶段仅用 <strong>170 步 RL</strong> 就将 AIME'24 从 70.1 提升到 85.1，展现了高效的 RL 收敛特性。</p>
+
+<h3>Stage 3：Thinking Mode Fusion</h3>
+<p>将非思考能力融合到已具备推理能力的模型中。通过精心设计的 SFT 数据（包含 Thinking 和 Non-Thinking 两种格式）和监督微调实现双模式兼容。Thinking 数据通过拒绝采样从 Stage 2 模型生成，确保推理能力不退化。</p>
+
+<h3>Stage 4：General RL</h3>
+<p>覆盖 20+ 任务的通用强化学习，使用三类奖励信号：</p>
+<ul>
+  <li><strong>基于规则的奖励</strong>：数学验证、代码编译测试</li>
+  <li><strong>模型奖励</strong>：用于偏好对齐和风格控制</li>
+  <li><strong>环境反馈</strong>：Agent 任务中的真实环境执行结果</li>
+</ul>
+
+<h2>Strong-to-Weak 蒸馏</h2>
+<p>对于轻量级模型（如 Qwen3-30B-A3B、Qwen3-14B 等），Qwen3 采用 <strong>Strong-to-Weak Distillation</strong> 策略，而非逐一执行完整的四阶段训练。具体来说，直接将旗舰模型的输出 Logits 蒸馏到小模型上，同时保留对推理过程的细粒度控制。</p>
+
+<p>这种方法带来了三重收益：</p>
+<ul>
+  <li><strong>Pass@1 更高</strong>：蒸馏后的模型在单次采样上表现更好</li>
+  <li><strong>Pass@64 更高</strong>：模型的探索能力也得到了保留</li>
+  <li><strong>训练效率极高</strong>：仅需四阶段训练的 <strong>1/10 GPU 小时</strong></li>
+</ul>
+
+<h2>性能表现</h2>
+<h3>Thinking 模式</h3>
+
+<table class="bench-table">
+  <thead>
+    <tr>
+      <th>基准</th>
+      <th>Qwen3-235B-A22B</th>
+      <th>DeepSeek-R1</th>
+      <th>OpenAI o1</th>
+      <th>Gemini 2.5 Pro</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AIME'24</td>
+      <td class="highlight">85.7</td>
+      <td>79.8</td>
+      <td>74.3</td>
+      <td class="highlight">92.0</td>
+    </tr>
+    <tr>
+      <td>AIME'25</td>
+      <td class="highlight">81.5</td>
+      <td>70.0</td>
+      <td>79.2</td>
+      <td>86.7</td>
+    </tr>
+    <tr>
+      <td>MATH-500</td>
+      <td>96.4</td>
+      <td class="highlight">97.3</td>
+      <td>96.4</td>
+      <td>98.0</td>
+    </tr>
+    <tr>
+      <td>LiveCodeBench v5</td>
+      <td class="highlight">70.7</td>
+      <td>64.3</td>
+      <td>63.9</td>
+      <td>70.4</td>
+    </tr>
+    <tr>
+      <td>Codeforces Rating</td>
+      <td class="highlight">2056</td>
+      <td>2029</td>
+      <td>1891</td>
+      <td>2001</td>
+    </tr>
+    <tr>
+      <td>BFCL v3 (工具调用)</td>
+      <td class="highlight">70.8</td>
+      <td>56.9</td>
+      <td>67.8</td>
+      <td>62.9</td>
+    </tr>
+    <tr>
+      <td>MMLU-Redux</td>
+      <td>92.7</td>
+      <td class="highlight">92.9</td>
+      <td>92.8</td>
+      <td class="highlight">93.7</td>
+    </tr>
+    <tr>
+      <td>Arena-Hard</td>
+      <td class="highlight">95.6</td>
+      <td>92.3</td>
+      <td>92.1</td>
+      <td class="highlight">96.4</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Non-Thinking 模式</h3>
+
+<table class="bench-table">
+  <thead>
+    <tr>
+      <th>基准</th>
+      <th>Qwen3-235B-A22B</th>
+      <th>DeepSeek-V3</th>
+      <th>Qwen2.5-72B</th>
+      <th>Llama-4 Maverick</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>MMLU-Redux</td>
+      <td>89.2</td>
+      <td class="highlight">89.1</td>
+      <td>86.8</td>
+      <td class="highlight">91.8</td>
+    </tr>
+    <tr>
+      <td>GPQA-Diamond</td>
+      <td class="highlight">62.9</td>
+      <td>59.1</td>
+      <td>49.0</td>
+      <td class="highlight">69.8</td>
+    </tr>
+    <tr>
+      <td>LiveBench 2024-11</td>
+      <td class="highlight">62.5</td>
+      <td>60.5</td>
+      <td>51.4</td>
+      <td>59.5</td>
+    </tr>
+    <tr>
+      <td>Arena-Hard</td>
+      <td class="highlight">96.1</td>
+      <td>85.5</td>
+      <td>81.2</td>
+      <td>82.7</td>
+    </tr>
+    <tr>
+      <td>AlignBench v1.1</td>
+      <td class="highlight">8.91</td>
+      <td>8.64</td>
+      <td>7.89</td>
+      <td>7.97</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>旗舰模型 Qwen3-235B-A22B 在 Thinking 模式下以仅 22B 激活参数（DeepSeek-R1 的 60%）实现了在 17/23 项基准上超越 DeepSeek-R1 的成绩。在 Non-Thinking 模式下，Arena-Hard 96.1 和 AlignBench 8.91 显示了其在偏好对齐方面的领先水平。32B 密集型旗舰在多数基准上超越 QwQ-32B 并与 o3-mini 水平相当。</p>
+
+<h2>开源与部署</h2>
+<p>Qwen3 全系列以 Apache 2.0 协议开源：</p>
+<ul>
+  <li><strong>Hugging Face：</strong><a href="https://huggingface.co/Qwen" target="_blank" style="color:var(--copper-light)">huggingface.co/Qwen</a> · 所有 8 个模型权重</li>
+  <li><strong>ModelScope：</strong><a href="https://modelscope.cn/organization/qwen" target="_blank" style="color:var(--copper-light)">modelscope.cn/organization/qwen</a></li>
+  <li><strong>GitHub：</strong><a href="https://github.com/QwenLM/Qwen3" target="_blank" style="color:var(--copper-light)">github.com/QwenLM/Qwen3</a></li>
+  <li><strong>推理框架：</strong>通过 vLLM 和 SGLang 支持部署。Qwen3-30B-A3B（3B 激活）可在消费级 GPU 上高效运行，Qwen3-235B-A22B 推荐多 GPU 部署</li>
+  <li><strong>Hugging Face Transformers：</strong>自近期版本起原生支持，使用 <code>enable_thinking=False</code> 控制思考模式</li>
+</ul>
+
+<h2>总结</h2>
+<p>Qwen3 的核心贡献在于<strong>统一思考框架</strong>的设计，将推理模型与对话模型的能力融合到单一权重中，并通过 Thinking Budget 机制为用户提供了可调节的推理-速度权衡。在架构层面，细粒度 MoE 配合 128 专家和 QK-Norm 设计在 22B 激活参数下实现了超越 DeepSeek-R1（37B 激活）的推理性能，证明了 MoE 容量-效率权衡中的精细设计空间。</p>
+
+<p>多语言扩展至 119 种语言、Strong-to-Weak 蒸馏以 1/10 的 GPU 成本高效生产轻量模型，以及 Apache 2.0 的完全开源协议，使得 Qwen3 成为从云端旗舰到边缘设备的广泛部署选择。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">Qwen</span>
+      <span class="p-tag">MoE</span>
+      <span class="p-tag">推理优化</span>
+      <span class="p-tag">多语言</span>
+      <span class="p-tag">GQA</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

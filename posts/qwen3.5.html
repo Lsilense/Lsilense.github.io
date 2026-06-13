@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Qwen3.5 技术解析 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
+.post-detail .p-body .bench-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .bench-table th, .post-detail .p-body .bench-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .bench-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .bench-table td { background: var(--code-bg); }
+.post-detail .p-body .bench-table .highlight { color: var(--copper-light); font-weight: 600; }
+.post-detail .p-body .arch-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .arch-table th, .post-detail .p-body .arch-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .arch-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .arch-table td { background: var(--code-bg); text-align: left; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>Qwen3.5 技术解析：Hybrid MoE 与全模态融合架构</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 13 日</span>
+      <span>🏷️ <a href="../posts.html?tag=Qwen" style="color:var(--copper-light)">Qwen</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>2026 年 4 月，阿里云 Qwen 团队发布了 Qwen3.5 系列——Qwen 模型家族的又一次重大架构升级。Qwen3.5 的核心变化并不在模型规模的单向增长，而是在<strong>基础架构层面引入 Hybrid MoE（混合注意力 MoE）</strong>，并对文本表示层进行了根本性重构——词表从 Qwen3 的 150k 大幅扩展至 <strong>250k</strong>，使绝大多数语言的编码效率提升 10-60%。</p>
+
+<p>Qwen3.5 的发布形式与之前有所不同——它以 <strong>Qwen3.5-Omni</strong> 技术报告（arXiv:2604.15804）为载体，作为全模态（Omni）基座模型发布，同时提供 <strong>Plus</strong>（旗舰）和 <strong>Flash</strong>（高效）两个变体。Hybrid MoE 架构由 Qwen3.5 首次引入，并在 Thinker 和 Talker 两个组件中统一使用。该架构包含 <strong>Gated Delta Net（GDN）</strong>模块，专门用于加速长序列建模。此外，Qwen3.5 将默认上下文长度从 Qwen3 的 128K 提升至 <strong>256K</strong>，支持 10 小时以上音频与 400 秒 720P 视频的联合理解。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>技术报告：</strong>Qwen3.5-Omni Technical Report<br>
+<a href="https://arxiv.org/abs/2604.15804" target="_blank" style="color:var(--copper-light)">https://arxiv.org/abs/2604.15804</a> · arXiv:2604.15804
+</p>
+
+<h2>架构总览</h2>
+
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>规格</th>
+      <th>Qwen3 (235B-A22B)</th>
+      <th>Qwen3.5</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>基础架构</td>
+      <td>标准 MoE（128 专家，Top-8）</td>
+      <td class="highlight">Hybrid MoE（混合注意力）</td>
+    </tr>
+    <tr>
+      <td>特殊模块</td>
+      <td>—</td>
+      <td class="highlight">Gated Delta Net（GDN）</td>
+    </tr>
+    <tr>
+      <td>词表大小</td>
+      <td>150k</td>
+      <td class="highlight">250k</td>
+    </tr>
+    <tr>
+      <td>上下文长度</td>
+      <td>128K</td>
+      <td class="highlight">256K</td>
+    </tr>
+    <tr>
+      <td>参数规模</td>
+      <td>235B 总参 / 22B 激活</td>
+      <td>数百亿级</td>
+    </tr>
+    <tr>
+      <td>变体</td>
+      <td>235B-A22B, 30B-A3B, 32B, ...</td>
+      <td class="highlight">Plus, Flash</td>
+    </tr>
+    <tr>
+      <td>Think / Non-Think</td>
+      <td>✓（Chat Template 控制）</td>
+      <td>✓</td>
+    </tr>
+    <tr>
+      <td>视觉编码器</td>
+      <td>—</td>
+      <td>SigLIP2</td>
+    </tr>
+    <tr>
+      <td>音频编码器</td>
+      <td>—</td>
+      <td>AuT（6.25Hz Token 率）</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Hybrid MoE：超越标准 MoE</h2>
+<p>Qwen3.5 最核心的架构创新是 <strong>Hybrid MoE（混合注意力 MoE）</strong>。与 Qwen3 仅在 FFN 层使用标准 Top-K MoE 不同，Hybrid MoE 将细粒度专家路由的思想从 FFN 层扩展到了注意力层——不同的注意力头可以属于不同的"注意力专家"，根据输入动态选择最合适的注意力模式。</p>
+
+<p>具体来说，Hybrid MoE 在以下两个层面进行混合：</p>
+<ul>
+  <li><strong>注意力头级别的专家路由</strong>：不同注意力头使用不同的压缩率和稀疏策略，类似 DeepSeek-V4 的 CSA + HCA 混合思路，但在实现上通过 MoE 路由自然实现</li>
+  <li><strong>FFN 层 MoE</strong>：继承 Qwen3 的细粒度专家分割设计，专家池和激活策略在 Qwen3 基础上进一步优化</li>
+</ul>
+
+<p>这种设计的核心优势在于，对于短序列，模型倾向于使用高容量、稀疏的注意力模式；对于长序列，自动切换到更高效的压缩注意力模式——通过 MoE 路由自然实现，无需硬编码切换逻辑。</p>
+
+<h2>Gated Delta Net（GDN）</h2>
+<p>GDN 是 Hybrid MoE 架构中的关键新模块，专门优化长序列场景下的计算效率。其核心思想是<strong>增量式更新</strong>：对于长音频-视频序列，相邻帧之间的差异通常是稀疏且局部的。GDN 将注意力计算分解为基础表示和增量更新两部分，大幅降低了冗余计算：</p>
+
+<div class="mermaid">
+flowchart LR
+    subgraph Standard["标准注意力"]
+        S1["每帧独立计算<br/>注意力"] --> S2["O(L²) 复杂度<br/>L = 序列长度"]
+    end
+
+    subgraph GDN["Gated Delta Net"]
+        G1["维护基础状态<br/>B = f(x₀, ..., xₖ)"] --> G2["新帧 xₜ+₁<br/>计算增量 Δ"]
+        G2 --> G3["门控融合<br/>状态 ← 门(Δ) · 更新"]
+        G3 --> G4["O(L · Δ) 复杂度<br/>Δ ≪ L 时高效"]
+    end
+
+    Standard -.- GDN
+</div>
+<p class="diagram-caption">图 1：GDN 原理示意 — 对比标准注意力（每帧独立计算 O(L²)）与 GDN 增量更新（O(L·Δ)，Δ 为少量变化的维度）。GDN 在长序列场景下显著降低计算量</p>
+
+<p>GDN 在 Qwen3.5-Omni 的 Thinker（文本生成）和 Talker（语音生成）两个组件中均使用，特别适用于处理 10 小时音频和 400 秒视频这类超长序列输入。</p>
+
+<h2>250k 词表：编码效率的革命</h2>
+<p>Qwen3.5 将词表从 Qwen3 的 150k 扩展至 250k，采用字节级 BPE 编码。更大的词表意味着：</p>
+<ul>
+  <li>常见的子词和多语言字符可以直接对应到单个 Token，无需拆分为多个子 Token</li>
+  <li><strong>编码效率提升 10-60%</strong>（因语言而异），直接降低了推理时的序列长度和 KV Cache 开销</li>
+  <li>对于中文、日语、韩语等 CJK 语言，编码效率提升尤为显著——单个汉字的表示不再需要多个 token</li>
+</ul>
+
+<p>更大的词表并非无代价——Softmax 输出层的计算量随词表大小线性增长。Qwen3.5 通过在输出层使用经过优化的计算策略（包括 MoE 路由的特殊处理）来缓解词表膨胀带来的开销。</p>
+
+<h2>256K 上下文与全模态融合</h2>
+<p>Qwen3.5 将默认上下文长度提升至 256K，相比 Qwen3 翻倍。在与视觉和音频编码器配合时：</p>
+<ul>
+  <li><strong>音频</strong>：AuT（Audio Transformer）编码器在 40M 小时的视频数据上训练，输出 6.25Hz 的音频 Token 率——每秒音频仅 6-7 个 Token，在 256K 窗口内可容纳超过 10 小时音频</li>
+  <li><strong>视觉</strong>：SigLIP2 视觉编码器处理图像和视频帧，配合时间 ID 标记实现精确的时间感知</li>
+  <li><strong>跨模态对齐</strong>：文本、音频、视频三种模态通过统一的时间 ID 系统对齐，时间戳精细度 160ms</li>
+</ul>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Encoders["多模态编码器"]
+        TEXT["文本 Token<br/>250k 词表 BPE"]
+        AUDIO["音频 AuT<br/>6.25Hz Token 率"]
+        VISION["图像 SigLIP2"]
+    end
+
+    subgraph Thinker["Thinker (Hybrid MoE)"]
+        TH["Hybrid MoE Transformer<br/>+ GDN 模块<br/>256K 上下文窗口"]
+    end
+
+    subgraph Talker["Talker (Hybrid MoE)"]
+        TA["Hybrid MoE Transformer<br/>+ GDN + MTP<br/>流式语音生成"]
+    end
+
+    subgraph Outputs["输出"]
+        TEXT_OUT["文本响应"]
+        SPEECH_OUT["流式语音<br/>Code2Wav ConvNet"]
+        ACTION_OUT["工具调用<br/>FunctionCall"]
+    end
+
+    TEXT --> Thinker
+    AUDIO --> Thinker
+    VISION --> Thinker
+    Thinker --> TEXT_OUT
+    Thinker --> Talker --> SPEECH_OUT
+    Thinker --> ACTION_OUT
+</div>
+<p class="diagram-caption">图 2：Qwen3.5 全模态架构 — Thinker 处理文本/音频/视频统一序列，Talker 生成流式语音，两者均基于 Hybrid MoE Transformer + GDN</p>
+
+<h2>流式语音与 ARIA</h2>
+<p>Qwen3.5 在语音生成侧引入了 <strong>ARIA（Adaptive Rate Interleave Alignment）</strong>，解决了流式语音合成中文本与语音编码效率不一致导致的自然度问题。传统方案使用固定交织率（如强制文本-语音对齐），在跨语言场景下表现不稳定。ARIA 的解决方案是自适应的速率约束——对于生成前缀的任意子序列，累积的语音-文本 Token 比率不超过条目级的全局比率。这一简单设计在不同语言上均能产生自然流畅的合成语音。</p>
+
+<p>Talker 采用了 RVQ（残差向量量化）多码本音频编码，配合 <strong>MTP（Multi-Token Prediction）</strong> 模块在同一解码步输出所有残差码本，再通过 Code2Wav ConvNet 逐帧合成波形，实现帧级流式生成。</p>
+
+<h2>预训练与数据</h2>
+<p>Qwen3.5 的预训练使用了大规模异构数据：</p>
+<ul>
+  <li><strong>文本-视觉对</strong>：海量图文数据</li>
+  <li><strong>音频-视觉数据</strong>：超过 1 亿小时的多语言音频-视频内容，覆盖 113 种语言的语音识别和 36 种语言的语音合成</li>
+  <li><strong>训练策略</strong>：先冻结 LLM 参数训练编码器，再解冻全参数联合训练</li>
+</ul>
+
+<h2>性能表现</h2>
+<p>Qwen3.5-Omni（基于 Qwen3.5 构建）在广泛的音频和音频-视觉任务上进行了评测：</p>
+
+<table class="bench-table">
+  <thead>
+    <tr>
+      <th>任务类别</th>
+      <th>基准</th>
+      <th>Qwen3.5-Omni-Plus</th>
+      <th>Gemini 3.1 Pro</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>音频问答</td>
+      <td>DailyOmni</td>
+      <td class="highlight">84.6</td>
+      <td>82.7</td>
+    </tr>
+    <tr>
+      <td>音频问答</td>
+      <td>WorldSense</td>
+      <td>62.8</td>
+      <td class="highlight">65.5</td>
+    </tr>
+    <tr>
+      <td>音视频问答</td>
+      <td>AVUT</td>
+      <td class="highlight">85.0</td>
+      <td>85.6</td>
+    </tr>
+    <tr>
+      <td>音视频理解</td>
+      <td>VideoMME (w/ audio)</td>
+      <td>83.7</td>
+      <td class="highlight">89.0</td>
+    </tr>
+    <tr>
+      <td>多语言 ASR</td>
+      <td>FLEURS（平均）</td>
+      <td class="highlight">6.6% WER</td>
+      <td>7.3% WER</td>
+    </tr>
+    <tr>
+      <td>语音合成</td>
+      <td>SEED-TTS (test-en)</td>
+      <td class="highlight">1.26% WER</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Qwen3.5-Omni-Plus 在 215 项音频和音视频子任务中达到或超越了 Gemini 3.1 Pro 的水平，在多语言 ASR（6.6% vs 7.3% WER）和粤语等复杂语言的语音识别上优势明显（2.2% vs 6.3% WER）。</p>
+
+<p>对于 Qwen3.5 的纯文本能力，从其全模态表现可以推断基础 LLM 保持了与 Qwen3 相当或更优的语言理解和推理水平——更大的词表（250k）和更长的上下文（256K）是其文本侧的两项关键升级。</p>
+
+<h2>开源与部署</h2>
+<p>Qwen3.5 系列模型以 Apache 2.0 协议开源：</p>
+<ul>
+  <li><strong>Hugging Face：</strong><a href="https://huggingface.co/Qwen" target="_blank" style="color:var(--copper-light)">huggingface.co/Qwen</a> · Qwen3.5-Omni-Plus 和 Qwen3.5-Omni-Flash</li>
+  <li><strong>ModelScope：</strong><a href="https://modelscope.cn/organization/qwen" target="_blank" style="color:var(--copper-light)">modelscope.cn/organization/qwen</a></li>
+  <li><strong>在线 Demo：</strong>Qwen3.5-Omni 提供了在线体验，支持文本/音频/视频交互</li>
+  <li><strong>推理框架：</strong>基于 Hugging Face Transformers，支持 256K 上下文的流式交互</li>
+  <li><strong>Flash 变体：</strong>为高效部署场景设计，在推理效率和模型质量之间取得平衡</li>
+</ul>
+
+<h2>总结</h2>
+<p>Qwen3.5 代表了 Qwen 系列在架构层面的又一次重要升级。Hybrid MoE 架构将专家路由从 FFN 层扩展到注意力层，配合 GDN 增量更新模块，为长序列建模提供了更高效的方案。250k 词表和 256K 上下文进一步扩展了模型的表达能力和处理范围。</p>
+
+<p>Qwen3.5 以全模态基座模型的形式发布，但其文本 LLM 能力的提升——特别是词表扩展带来的编码效率改进和 Hybrid MoE 带来的注意力架构升级——对于纯文本场景同样意义重大。Apache 2.0 的开源协议和 Plus / Flash 双变体策略使得 Qwen3.5 适合从云端全功能部署到边缘高效推理的多种场景。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">Qwen</span>
+      <span class="p-tag">Hybrid MoE</span>
+      <span class="p-tag">GDN</span>
+      <span class="p-tag">长上下文</span>
+      <span class="p-tag">全模态</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

@@ -31,8 +31,10 @@
     "tags": [
       "主流模型",
       "DeepSeek",
-      "长上下文",
-      "MoE"
+      "CSA",
+      "HCA",
+      "MoE",
+      "长上下文"
     ]
   },
   {
@@ -43,7 +45,61 @@
     "tags": [
       "主流模型",
       "Qwen",
-      "训练"
+      "GQA",
+      "训练",
+      "推理优化"
+    ]
+  },
+  {
+    "id": "qwen2.5",
+    "title": "Qwen2.5 技术解析：18T Token 预训练与两阶段 RL",
+    "date": "2026-06-13",
+    "excerpt": "深入解析 Qwen2.5 系列模型的核心技术：18T Token 预训练数据工程与领域均衡策略、GQA + SwiGLU 架构设计、细粒度 MoE 专家分割，以及基于离线 DPO + 在线 GRPO 的两阶段强化学习体系。",
+    "tags": [
+      "主流模型",
+      "Qwen",
+      "GQA",
+      "GRPO",
+      "数据工程"
+    ]
+  },
+  {
+    "id": "qwen3",
+    "title": "Qwen3 技术解析：统一思考框架与细粒度 MoE",
+    "date": "2026-06-13",
+    "excerpt": "深入解析 Qwen3 系列模型的核心创新：统一 Thinking / Non-Thinking 双模式框架、128 专家细粒度 MoE 架构、四阶段后训练管线、Thinking Budget 推理预算机制，以及从 29 到 119 种语言的多语言扩展策略。",
+    "tags": [
+      "主流模型",
+      "Qwen",
+      "MoE",
+      "推理优化",
+      "多语言"
+    ]
+  },
+  {
+    "id": "qwen3.5",
+    "title": "Qwen3.5 技术解析：Hybrid MoE 与全模态融合架构",
+    "date": "2026-06-13",
+    "excerpt": "深入解析 Qwen3.5 系列的核心技术升级：Hybrid MoE（混合注意力 MoE）架构、Gated Delta Net（GDN）长序列加速模块、250k 扩展词表、256K 上下文窗口，以及基于 Thinker-Talker 的全模态融合设计。",
+    "tags": [
+      "主流模型",
+      "Qwen",
+      "MoE",
+      "长上下文",
+      "全模态"
+    ]
+  },
+  {
+    "id": "qwen3.6",
+    "title": "Qwen3.6 / Qwen3.5 技术解析：Agentic Coding 与统一视觉-语言基座",
+    "date": "2026-06-13",
+    "excerpt": "系统解析 Qwen3.5 和 Qwen3.6 系列的核心技术：统一视觉-语言早期融合基座、GDN + 稀疏 MoE 架构、百万级 Agent RL 扩展、Qwen3.6 的 Agentic Coding 仓库级推理和 Thinking Preservation 跨轮次推理保留功能。",
+    "tags": [
+      "主流模型",
+      "Qwen",
+      "MoE",
+      "Agentic Coding",
+      "统一视觉-语言"
     ]
   },
   {
