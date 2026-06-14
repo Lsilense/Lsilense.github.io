@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ms-swift 技术解析：大模型微调部署框架 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
+
+.post-detail .p-body .bili-section { margin: 20px 0 28px; padding: 16px; background: var(--code-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md); }
+.post-detail .p-body .bili-section .bili-label { font-family: var(--font-mono); font-size: .7rem; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.post-detail .p-body .bili-section .bili-label svg { flex-shrink: 0; }
+.post-detail .p-body .bili-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.post-detail .p-body .bili-grid .bili-card { flex: 1; min-width: 200px; }
+.post-detail .p-body .bili-grid .bili-card iframe { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); border: none; }
+.post-detail .p-body .bili-grid .bili-card .bili-title { font-size: .75rem; color: var(--text2); margin-top: 4px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.post-detail .p-body .bili-grid .bili-card .bili-play { font-size: .65rem; color: var(--text3); font-family: var(--font-mono); }
+
+
+.post-detail .p-body .bili-grid .bili-card .bili-embed-wrap { position: relative; }
+.post-detail .p-body .bili-grid .bili-card .bili-dur { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.75); color: #fff; font-size: .65rem; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); }
+.post-detail .p-body .bili-grid .bili-card .bili-meta { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+.post-detail .p-body .bili-grid .bili-card .bili-play { font-size: .65rem; color: var(--text3); font-family: var(--font-mono); }
+
+.post-detail .p-body .cmd-block { background: var(--code-bg); border-radius: var(--radius-md); margin: 16px 0; overflow: hidden; border: 1px solid var(--border); }
+.post-detail .p-body .cmd-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: .75rem; color: var(--text3); }
+.post-detail .p-body .cmd-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+.post-detail .p-body .cmd-header .dot.red { background: #ff5f57; }
+.post-detail .p-body .cmd-header .dot.yellow { background: #ffbd2e; }
+.post-detail .p-body .cmd-header .dot.green { background: #28c840; }
+.post-detail .p-body .cmd-body { padding: 14px 16px; overflow-x: auto; }
+.post-detail .p-body .cmd-body code { font-family: var(--font-mono); font-size: .78125rem; line-height: 1.7; color: var(--text2); white-space: pre; }
+.post-detail .p-body .param-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .85rem; }
+.post-detail .p-body .param-table th { background: var(--code-bg); text-align: left; padding: 8px 12px; font-weight: 600; border: 1px solid var(--border); }
+.post-detail .p-body .param-table td { padding: 8px 12px; border: 1px solid var(--border); }
+.post-detail .p-body .param-table tr:hover td { background: var(--code-bg); }
+.post-detail .p-body .param-table .param-name { font-family: var(--font-mono); font-size: .8rem; color: var(--copper); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<main class="post-detail">
+<article>
+<header class="p-header">
+  <div class="p-meta">
+    <span class="p-tag">训练框架</span>
+    <span class="p-tag">Qwen</span>
+    <span class="p-tag">PEFT</span>
+    <span class="p-date">2026-06-14</span>
+  </div>
+  <h1 class="p-title">ms-swift 技术解析：大模型微调部署框架</h1>
+  <div class="p-desc">深入解析 ModelScope 社区开源的 ms-swift（Scalable lightWeight Infrastructure for Fine-Tuning）框架：覆盖 600+ 纯文本大模型与 400+ 多模态大模型的训练、推理、评测、量化与部署全链路，集成 LoRA/QLoRA 等轻量微调与 GRPO 系列强化学习算法，支持 Megatron 多维并行训练。</div>
+</header>
+
+<div class="p-body">
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--text3);padding:4px 0 8px">📄 来源：SWIFT: A Scalable lightWeight Infrastructure for Fine-Tuning · AAAI 2025 · arXiv:2408.05517 · GitHub: modelscope/ms-swift</p>
+
+<h2>一、背景与简介</h2>
+
+<p>随着大语言模型（LLM）和多模态大模型（MLLM）的快速发展，基于 Attention 的 Transformer 架构在各类传统学习任务上表现出色。文本分类、序列标注、视觉问答（VQA）、OCR 等原本需要不同模型处理的任务，现在可以基于一个基座模型完成。这种趋势使得大模型的训练与轻量微调变得尤为重要。</p>
+
+<p><strong>ms-swift</strong>（Scalable lightWeight Infrastructure for Fine-Tuning）是魔搭（ModelScope）社区推出的开源大模型微调部署框架，被 AAAI 2025 收录。截至 2026 年 6 月，已支持 600+ 纯文本大模型和 400+ 多模态大模型，覆盖从预训练、微调、人类对齐到推理、评测、量化、部署的全链路流程。GitHub 星标超过 14,500，是开源社区中最全面的微调框架之一。</p>
+
+<h2>二、整体架构</h2>
+
+<p>ms-swift 采用模块化设计，核心模块涵盖模型管理、数据集处理、训练引擎、推理引擎、评估与量化等全流程组件：</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "ms-swift 整体架构"
+        CLI["命令行接口 swift CLI"] --- UI["Web-UI (Gradio)"]
+        CLI --- Python["Python SDK"]
+        UI --- Core["核心引擎"]
+        Python --- Core
+
+        subgraph Core["核心引擎"]
+            Model["模型管理<br/>get_model_processor"]
+            Dataset["数据集<br/>load_dataset + EncodePreprocessor"]
+            Template["对话模板<br/>get_template"]
+            Trainer["训练器<br/>Seq2SeqTrainer"]
+            Tuner["轻量微调<br/>LoRA / QLoRA / DoRA"]
+            Infer["推理引擎<br/>Transformers / vLLM / SGLang"]
+        end
+
+        Trainer --- Dist["分布式后端"]
+        subgraph Dist["分布式后端"]
+            DDP["DDP"]
+            DS["DeepSpeed ZeRO2/3"]
+            FSDP["FSDP/FSDP2"]
+            Mega["Megatron<br/>TP/PP/CP/EP"]
+        end
+
+        Trainer --- RL["强化学习"]
+        subgraph RL["GRPO 算法族"]
+            GRPO["GRPO"]
+            DAPO["DAPO"]
+            GSPO["GSPO"]
+            RLOO["RLOO"]
+            ReinforcePP["Reinforce++"]
+        end
+
+        Infer --- Eval["评测<br/>EvalScope"]
+        Infer --- Quant["量化<br/>GPTQ / AWQ / BNB / FP8"]
+    end
+
+    style CLI fill:#1f222a,stroke:#d9772b
+    style Core fill:#1f222a,stroke:#d9772b
+    style Trainer fill:#111318,stroke:#d9772b
+    style RL fill:#111318,stroke:#d9772b
+</div>
+<div class="diagram-caption">图 1：ms-swift 整体架构示意图</div>
+
+<p>框架的核心设计理念是<strong>统一抽象层</strong>——通过 Model ID 统一管理模型配置、分词器、对话模板与训练策略，用户只需切换 <code>--model</code> 参数即可在不同模型间无缝迁移，无需修改训练脚本。</p>
+
+<h3>2.1 模型管理模块</h3>
+
+<p><code>get_model_processor()</code> 是模型入口函数，根据 Model ID 自动加载模型权重、分词器、配置。框架通过 <code>model_type</code> 字段自动匹配对应的模型架构（如 <code>qwen2</code>、<code>llama</code>、<code>deepseek</code> 等），并注入对应的对话模板（Template）和 Agent 模板。</p>
+
+<h3>2.2 训练器模块</h3>
+
+<p><code>Seq2SeqTrainer</code> 继承自 HuggingFace Transformers 的 <code>Trainer</code>，扩展支持了自定义损失函数、梯度累积策略、 packing 技术以及多模态数据混合训练。训练器通过 <code>TrainerFactory</code> 统一调度，支持单卡、DDP、DeepSpeed、FSDP、Megatron 等多种后端。</p>
+
+<h3>2.3 轻量微调模块</h3>
+
+<p>框架深度集成 PEFT（Parameter-Efficient Fine-Tuning）生态，支持 12+ 种轻量微调方法：</p>
+
+<table class="param-table">
+<tr><th>方法</th><th>原理</th><th>典型适用场景</th></tr>
+<tr><td class="param-name">LoRA</td><td>低秩适配矩阵注入 Attention 权重</td><td>通用微调，显存 7B 约 13GB</td></tr>
+<tr><td class="param-name">QLoRA</td><td>4-bit 量化 + LoRA</td><td>显存受限场景，7B 约 9GB</td></tr>
+<tr><td class="param-name">DoRA</td><td>权重分解（方向 + 幅度）低秩适配</td><td>更精细的适配控制</td></tr>
+<tr><td class="param-name">LoRA+</td><td>LoRA 差异化学习率</td><td>加速收敛</td></tr>
+<tr><td class="param-name">LLaMAPro</td><td>Transformer 层间插入可训练层</td><td>深度适配</td></tr>
+<tr><td class="param-name">ReFT</td><td>表示微调（Representation Fine-Tuning）</td><td>极轻量参数微调</td></tr>
+<tr><td class="param-name">Adapter</td><td>Transformer 层间插入 Adapter 模块</td><td>经典 PEFT</td></tr>
+<tr><td class="param-name">LISA</td><td>随机选择层进行全参数更新</td><td>内存与效果平衡</td></tr>
+</table>
+<div class="diagram-caption">表 1：ms-swift 支持的 PEFT 方法</div>
+
+<h2>三、核心训练能力</h2>
+
+<h3>3.1 训练任务全景</h3>
+
+<p>ms-swift 支持六大类训练任务，覆盖大模型训练的全生命周期：</p>
+
+<div class="mermaid">
+graph LR
+    subgraph "训练任务"
+        CPT["CPT<br/>继续预训练"]
+        SFT["SFT<br/>指令微调"]
+        RLHF["RLHF<br/>人类对齐"]
+        EMB["Embedding<br/>/ Reranker"]
+        CLS["Seq Cls<br/>序列分类"]
+        DST["Distillation<br/>知识蒸馏"]
+    end
+
+    SFT --- PEFT["LoRA / QLoRA / DoRA ..."]
+    SFT --- FULL["全参数微调"]
+
+    RLHF --- DPO["DPO / KTO / CPO"]
+    RLHF --- SimPO["SimPO / ORPO"]
+    RLHF --- GRPO["GRPO / DAPO / RLOO..."]
+
+    CPT --- PT["Pretrain 引擎"]
+
+    style SFT fill:#1f222a,stroke:#d9772b
+    style RLHF fill:#1f222a,stroke:#d9772b
+</div>
+<div class="diagram-caption">图 2：ms-swift 支持的训练任务分类</div>
+
+<h3>3.2 SFT 指令微调</h3>
+
+<p>指令微调是 ms-swift 最核心的应用场景。以下是在单张 3090 上使用 LoRA 微调 Qwen3-4B 的标准命令：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">ms-swift SFT 示例</span></div>
+<div class="cmd-body"><code>CUDA_VISIBLE_DEVICES=0 \
+swift sft \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
+    --tuner_type lora \
+    --dataset 'AI-ModelScope/alpaca-gpt4-data-zh#500' \
+              'AI-ModelScope/alpaca-gpt4-data-en#500' \
+              'swift/self-cognition#500' \
+    --torch_dtype bfloat16 \
+    --num_train_epochs 1 \
+    --per_device_train_batch_size 1 \
+    --per_device_eval_batch_size 1 \
+    --learning_rate 1e-4 \
+    --lora_rank 8 \
+    --lora_alpha 32 \
+    --target_modules all-linear \
+    --gradient_accumulation_steps 16 \
+    --eval_steps 50 \
+    --save_steps 50 \
+    --max_length 2048 \
+    --output_dir output \
+    --warmup_ratio 0.05</code></div>
+</div>
+
+<p>关键参数含义：</p>
+<ul>
+  <li><code>--model</code>：ModelScope 或 HuggingFace 模型 ID，框架自动识别架构并匹配对话模板</li>
+  <li><code>--tuner_type</code>：微调方式，支持 <code>lora</code>、<code>qlora</code>、<code>full</code>（全参数）等</li>
+  <li><code>--target_modules all-linear</code>：将所有线性层作为 LoRA 目标，比仅 Attention 层效果更优</li>
+  <li><code>--dataset</code>：支持同时加载多个数据集，<code>#500</code> 表示每个数据集取 500 条</li>
+</ul>
+
+<h3>3.3 GRPO 强化学习</h3>
+
+<p>ms-swift 集成了丰富的 GRPO 算法族，是开源框架中 GRPO 支持最全面的方案之一：</p>
+
+<ul>
+  <li><strong>GRPO</strong>（Group Relative Policy Optimization）— 组间相对策略优化，DeepSeek-R1 核心算法</li>
+  <li><strong>DAPO</strong> — 动态采样策略优化</li>
+  <li><strong>GSPO / SAPO / CISPO</strong> — GRPO 的多种变体</li>
+  <li><strong>RLOO</strong> — REINFORCE Leave-One-Out</li>
+  <li><strong>Reinforce++</strong> — 增强版 REINFORCE</li>
+  <li><strong>CHORD</strong> — 将偏好对齐与 RL 结合的混合方案</li>
+</ul>
+
+<p>GRPO 训练支持同步和异步 vLLM 引擎推理加速，通过可扩展的奖励函数插件支持自定义 reward 逻辑，以及多轮推理 Scheduler 支持 Agent 工具调用场景。</p>
+
+<h3>3.4 Megatron 分布式训练</h3>
+
+<p>对于大规模 MoE 模型，ms-swift 深度集成 Megatron 并行技术：</p>
+
+<table class="param-table">
+<tr><th>并行策略</th><th>缩写</th><th>说明</th></tr>
+<tr><td class="param-name">Tensor Parallelism</td><td>TP</td><td>张量切分到多 GPU</td></tr>
+<tr><td class="param-name">Pipeline Parallelism</td><td>PP</td><td>层间流水线并行</td></tr>
+<tr><td class="param-name">Sequence Parallelism</td><td>SP</td><td>序列维度切分</td></tr>
+<tr><td class="param-name">Context Parallelism</td><td>CP</td><td>上下文窗口切分</td></tr>
+<tr><td class="param-name">Expert Parallelism</td><td>EP</td><td>MoE 专家切分</td></tr>
+<tr><td class="param-name">Virtual Pipeline</td><td>VPP</td><td>虚拟流水线调度</td></tr>
+</table>
+<div class="diagram-caption">表 2：Megatron 并行策略</div>
+
+<h2>四、显存优化技术</h2>
+
+<p>ms-swift 集成了多种显存优化技术，使得在消费级 GPU 上训练大模型成为可能：</p>
+
+<h3>4.1 序列并行</h3>
+<p>支持 <strong>Ulysses</strong> 和 <strong>Ring Attention</strong> 序列并行技术，将长序列切分到多 GPU 上计算注意力。Ulysses 可与 Ring-Attention 联合使用，序列可分片到任意数量（不限于注意力头数），大幅降低单卡显存占用。</p>
+
+<h3>4.2 Flash Attention 2/3</h3>
+<p>集成 Flash Attention 2/3，通过 IO 感知的精确注意力算法（tiling + 重计算）将注意力计算的时间复杂度从 $O(N^2)$ 的显存占用降低到 $O(N)$，同时加速计算。</p>
+
+<h3>4.3 GaLore / Q-Galore</h3>
+<p><strong>GaLore</strong>（Gradient Low-Rank Projection）在预训练阶段将梯度投影到低秩空间，减少优化器状态的显存占用。<strong>Q-Galore</strong> 进一步结合量化，适用于资源极度受限的场景。</p>
+
+<h3>4.4 Liger-Kernel 与 UnSloth</h3>
+<p>提供优化后的 Triton kernel（<strong>Liger-Kernel</strong>）和内存高效的训练技巧（<strong>UnSloth</strong>），减少激活值显存并加速计算。</p>
+
+<h3>4.5 多模态 Packing</h3>
+<p>在训练多模态模型时，将多个样本打包到一个序列中，充分利用填充位置的算力，训练速度提升 100%+。支持文本、图像、视频、音频的混合模态数据训练。</p>
+
+<h2>五、Qwen 系列模型训练实践</h2>
+
+<p>ms-swift 对通义千问（Qwen）全系列模型提供了 Day-0 支持，从 Qwen-1.8B 到 Qwen3.6 全系列覆盖。以下针对不同 Qwen 版本给出最佳实践。</p>
+
+<h3>5.1 Qwen1.5 系列 Dense 模型</h3>
+
+<p>Qwen1.5（Qwen2 架构）采用 GQA + SwiGLU，参数规模从 0.5B 到 110B。推荐配置：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">Qwen1.5-7B LoRA SFT</span></div>
+<div class="cmd-body"><code>CUDA_VISIBLE_DEVICES=0 \
+swift sft \
+    --model Qwen/Qwen1.5-7B-Chat \
+    --tuner_type lora \
+    --target_modules all-linear \
+    --lora_rank 16 \
+    --lora_alpha 32 \
+    --dataset your_dataset.jsonl \
+    --torch_dtype bfloat16 \
+    --per_device_train_batch_size 2 \
+    --gradient_accumulation_steps 8 \
+    --learning_rate 2e-4 \
+    --max_length 4096 \
+    --output_dir output/qwen1.5-7b-sft</code></div>
+</div>
+
+<h3>5.2 Qwen2.5 系列多规模适配</h3>
+
+<p>Qwen2.5 系列包含 0.5B 到 72B 的 Dense 模型和 14B-A32B 的 MoE 模型。对于 MoE 模型，推荐使用 Megatron + Expert Parallelism 加速：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">Qwen2.5-32B MoE Megatron 训练</span></div>
+<div class="cmd-body"><code>CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
+swift sft \
+    --model Qwen/Qwen2.5-32B-A14B \
+    --tuner_type full \
+    --train_type megatron \
+    --tensor_parallel_size 2 \
+    --pipeline_parallel_size 2 \
+    --expert_parallel_size 2 \
+    --dataset your_dataset.jsonl \
+    --torch_dtype bfloat16 \
+    --per_device_train_batch_size 1 \
+    --gradient_accumulation_steps 4 \
+    --learning_rate 1e-5 \
+    --max_length 8192 \
+    --output_dir output/qwen2.5-32b-sft</code></div>
+</div>
+
+<h3>5.3 Qwen3 系列 MoE 微调</h3>
+
+<p>Qwen3 引入了 Thinking/Non-Thinking 双模式框架和细粒度 MoE（128 专家）。ms-swift 通过 <code>think_model</code> 参数支持 Qwen3 的思考模式训练：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">Qwen3-30B LoRA SFT</span></div>
+<div class="cmd-body"><code>CUDA_VISIBLE_DEVICES=0,1,2,3 \
+swift sft \
+    --model Qwen/Qwen3-30B-A3B \
+    --tuner_type lora \
+    --target_modules all-linear \
+    --lora_rank 16 \
+    --dataset your_dataset.jsonl \
+    --torch_dtype bfloat16 \
+    --per_device_train_batch_size 1 \
+    --gradient_accumulation_steps 4 \
+    --learning_rate 1e-4 \
+    --max_length 8192 \
+    --output_dir output/qwen3-30b-sft</code></div>
+</div>
+
+<h3>5.4 Qwen3-VL 多模态微调</h3>
+
+<p>ms-swift 是多模态微调支持最全面的框架之一，支持 Qwen3-VL 的视觉语言联合微调：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">Qwen3-VL-7B 多模态 SFT</span></div>
+<div class="cmd-body"><code>CUDA_VISIBLE_DEVICES=0 \
+swift sft \
+    --model Qwen/Qwen3-VL-7B \
+    --tuner_type lora \
+    --target_modules all-linear \
+    --dataset your_vlm_dataset.jsonl \
+    --torch_dtype bfloat16 \
+    --per_device_train_batch_size 1 \
+    --gradient_accumulation_steps 16 \
+    --learning_rate 1e-4 \
+    --lora_rank 8 \
+    --freeze_vit true \
+    --max_length 4096 \
+    --output_dir output/qwen3-vl-sft</code></div>
+</div>
+
+<p>多模态训练支持独立控制视觉编码器（ViT）、对齐器（Aligner）和语言模型（LLM）的可训练状态。通过 <code>--freeze_vit true</code> 冻结视觉编码器可大幅减少显存占用。</p>
+
+<h2>六、推理与部署</h2>
+
+<p>训练完成后，ms-swift 提供完整的推理加速与模型部署方案：</p>
+
+<h3>6.1 推理加速引擎</h3>
+<p>支持三种主流推理后端：<strong>vLLM</strong>（PagedAttention 显存管理）、<strong>SGLang</strong>（RadixAttention 前缀缓存）、<strong>LMDeploy</strong>（TurboMind 高效推理引擎），并提供 OpenAI 兼容接口。</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">vLLM 加速推理</span></div>
+<div class="cmd-body"><code>CUDA_VISIBLE_DEVICES=0 \
+swift infer \
+    --adapters output/vx-xxx/checkpoint-xxx \
+    --merge_lora true \
+    --infer_backend vllm \
+    --vllm_max_model_len 8192 \
+    --temperature 0 \
+    --max_new_tokens 2048</code></div>
+</div>
+
+<h3>6.2 模型量化</h3>
+<p>支持 <strong>AWQ</strong>、<strong>GPTQ</strong>、<strong>FP8</strong>、<strong>BNB</strong> 四种量化方法。量化后的模型可直接使用 vLLM / SGLang / LMDeploy 加速推理。</p>
+
+<h3>6.3 模型评测</h3>
+<p>集成 EvalScope 评测后端，覆盖 100+ 评测数据集，支持纯文本和多模态模型的自动化评估。</p>
+
+<h3>6.4 模型导出与推送</h3>
+<p>微调完成后可通过 <code>swift export</code> 合入 LoRA 权重并推送至 ModelScope 或 HuggingFace Hub。</p>
+
+<h2>七、总结</h2>
+
+<p>ms-swift 作为魔搭社区的核心开源项目，具有以下突出特点：</p>
+
+<ul>
+  <li><strong>模型覆盖面广</strong>：600+ LLM + 400+ MLLM，热门模型 Day-0 支持，Qwen 全系列完整覆盖</li>
+  <li><strong>训练方法全面</strong>：从预训练到人类对齐，12+ PEFT 方法 + GRPO 算法族 + Megatron 并行</li>
+  <li><strong>消费级友好</strong>：QLoRA + Flash Attention + GaLore 等技术使单卡微调 7B 模型仅需 9GB 显存</li>
+  <li><strong>全链路覆盖</strong>：训练→推理→评测→量化→部署，一站式解决方案</li>
+  <li><strong>多模态领先</strong>：首个系统化支持 MLLM 微调的开源框架，支持视觉、音频、视频的混合模态训练</li>
+  <li><strong>统一抽象</strong>：通过 Model ID 驱动配置，用户只需更换 <code>--model</code> 参数即可在不同模型间迁移</li>
+</ul>
+
+<p>ms-swift 已被 AAAI 2025 收录，是目前开源社区中支持模型最多、训练方法最全面的大模型微调框架之一。对于使用 Qwen 系列模型进行实际业务微调的开发者来说，ms-swift 提供了一条从数据准备到模型部署的完整通路。</p>
+
+</div>
+</article>
+</main>
+
+<footer class="p-footer">
+  <div class="p-footer-inner">
+    <a href="../posts.html" class="p-back">← 返回文章列表</a>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+document.querySelectorAll('.cmd-body code').forEach(function(block) {
+  block.innerHTML = block.innerHTML.replace(/^/gm, '').replace(/^/, '');
+});
+</script>
+</body>
+</html>
