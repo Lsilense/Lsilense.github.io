@@ -59,11 +59,22 @@ document.addEventListener('DOMContentLoaded', function() {
 .post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 .post-detail .p-body .katex { font-size: 1.05em; }
 .post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
 .p-body .version-timeline { margin: 20px 0; }
 .p-body .version-timeline .vt-row { display: flex; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border-light); gap: 12px; }
 .p-body .version-timeline .vt-date { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); min-width: 100px; }
 .p-body .version-timeline .vt-ver { font-weight: 600; color: var(--copper-light); min-width: 140px; font-size: .875rem; }
 .p-body .version-timeline .vt-desc { color: var(--text2); font-size: .8125rem; }
+.p-body .version-timeline .vt-tag { display: inline-block; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+.p-body .version-timeline .vt-tag.arch { background: var(--copper-light); color: #fff; }
+.p-body .version-timeline .vt-tag.feat { background: #2563eb; color: #fff; }
+.p-body .version-timeline .vt-tag.paper { background: #7c3aed; color: #fff; }
+.post-detail .p-body .arch-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .8125rem; }
+.post-detail .p-body .arch-table th, .post-detail .p-body .arch-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: center; }
+.post-detail .p-body .arch-table th { background: var(--surface); font-weight: 600; color: var(--copper-light); }
+.post-detail .p-body .arch-table td { background: var(--code-bg); text-align: left; }
+.post-detail .p-body .arch-table .highlight { color: var(--copper-light); font-weight: 600; }
+.p-body .src-ref { font-family: var(--font-mono); font-size: .7rem; color: var(--text3); padding: 2px 8px; background: var(--surface); border-radius: 4px; display: inline-block; margin: 4px 0; }
 </style>
 </head>
 <body>
@@ -97,209 +108,322 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="p-body">
 
 <h2>引言</h2>
-<p>GLM（General Language Model）是智谱 AI（Zhipu AI）与清华大学联合开发的大语言模型系列。从 2021 年的 GLM 论文到 2024 年的 GLM-4，GLM 系列经历了从学术研究到工业级产品的完整演进：GLM 提出了统一 NLU 和 NLG 的自回归填空目标；GLM-130B 以 DeepNorm 解决了千亿参数训练的稳定性难题；ChatGLM 系列将模型推向开源社区；GLM-4 则在综合能力上追赶上了 GPT-4 的水平。</p>
-
-<p>本文覆盖 GLM 系列的前四个发展阶段（GLM → GLM-130B → ChatGLM → GLM-4），系统解析每一代的核心技术和演进逻辑。</p>
+<p>GLM（General Language Model）是智谱 AI（Zhipu AI）与清华大学联合开发的大语言模型系列。从 2021 年 ACL 论文到 2024 年的 GLM-4，GLM 经历了从学术研究到工业级产品的完整演进。本文基于各个模型的论文和技术报告，系统解析每一代的架构设计。</p>
 
 <div class="version-timeline">
   <div class="vt-row">
     <span class="vt-date">2021</span>
     <span class="vt-ver">GLM</span>
-    <span class="vt-desc">自回归填空（ABI）+ 2D 位置编码，统一 NLU/NLG</span>
+    <span class="vt-desc">ACL 2022 论文，ABI + 2D PE <span class="vt-tag paper">arXiv:2103.10360</span></span>
   </div>
   <div class="vt-row">
     <span class="vt-date">2022/08</span>
     <span class="vt-ver">GLM-130B</span>
-    <span class="vt-desc">DeepNorm 稳定性突破，千亿参数 INT4 量化</span>
+    <span class="vt-desc">ICLR 2023 论文，DeepNorm <span class="vt-tag paper">arXiv:2210.02414</span></span>
   </div>
   <div class="vt-row">
     <span class="vt-date">2023/03</span>
     <span class="vt-ver">ChatGLM-6B</span>
-    <span class="vt-desc">开源对话模型，消费级 GPU 可部署，P-Tuning v2</span>
+    <span class="vt-desc">开源发布（GitHub / HuggingFace）<span class="vt-tag feat">开源</span></span>
   </div>
   <div class="vt-row">
     <span class="vt-date">2023/06</span>
     <span class="vt-ver">ChatGLM2-6B</span>
-    <span class="vt-desc">FlashAttention + MQA，32K 上下文</span>
+    <span class="vt-desc">FlashAttention + MQA，32K 上下文 <span class="vt-tag feat">开源</span></span>
   </div>
   <div class="vt-row">
     <span class="vt-date">2023/10</span>
     <span class="vt-ver">ChatGLM3-6B</span>
-    <span class="vt-desc">GQA，Function Call，Agent 任务</span>
+    <span class="vt-desc">GQA + Function Call <span class="vt-tag feat">开源</span></span>
   </div>
   <div class="vt-row">
     <span class="vt-date">2024/01</span>
     <span class="vt-ver">GLM-4</span>
-    <span class="vt-desc">128K 上下文，All Tools，综合追赶 GPT-4</span>
+    <span class="vt-desc">128K 上下文，All Tools <span class="vt-tag arch">产品发布</span></span>
   </div>
   <div class="vt-row">
     <span class="vt-date">2024/06</span>
     <span class="vt-ver">GLM-4-9B</span>
-    <span class="vt-desc">开源 9B 模型，1M 上下文变体</span>
+    <span class="vt-desc">开源（HuggingFace 技术文档）<span class="vt-tag feat">开源</span></span>
   </div>
 </div>
 
-<div class="mermaid">
-flowchart LR
-    subgraph Era["GLM 系列演进路线"]
-        GLM["GLM<br/>ABI + 2D PE"] --> GLM130B["GLM-130B<br/>DeepNorm + INT4"]
-        GLM130B --> CHATGLM["ChatGLM-6B/2/3<br/>开源对话优化"]
-        CHATGLM --> GLM4["GLM-4<br/>128K + All Tools"]
-        GLM4 --> GLM45["GLM-4.5 → GLM-5<br/>MoE + Agent"]
-    end
-    style Era stroke:#d9772b,stroke-width:2px
-</div>
-<p class="diagram-caption">图 1：GLM 系列演进路线——从学术研究到产品级 MoE 智能体</p>
-
 <h2>GLM：自回归填空与统一预训练框架</h2>
-<p>GLM（arXiv:2103.10360）的核心贡献在于提出了一个全新的预训练框架——<strong>Autoregressive Blank Infilling (ABI)</strong>，将 NLU、条件生成和无条件生成统一到单一目标下。</p>
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--text3);padding:4px 0 8px">📄 来源：GLM: General Language Model Pretraining with Autoregressive Blank Infilling · ACL 2022 · arXiv:2103.10360</p>
+
+<p>GLM（arXiv:2103.10360，清华大学 & 智谱 AI，ACL 2022）提出 <strong>Autoregressive Blank Infilling (ABI)</strong> 预训练框架，将 NLU、条件生成和无条件生成统一到单一目标下。论文在 GLM-Base（110M）、GLM-Large（335M，1.25× BERT-Large）和 GLM-XL（~410M）三个规模上验证了方案的有效性。</p>
 
 <h3>Autoregressive Blank Infilling (ABI)</h3>
-<p>ABI 的思想结合了自编码和自回归的目标：从输入文本中随机 Blank 出连续的 Token 片段（类似 BERT 的 Mask），然后<strong>自回归地重构这些片段</strong>（类似 GPT 的生成）。与 T5 的 Span Corruption 不同，ABI 引入了 <strong>Span Shuffling</strong>——对短文的预测顺序进行随机排列，使模型必须捕获片段之间的依赖关系。</p>
-
-<p>给定输入 $x = [x_1, ..., x_n]$，随机选择多个跨度 $\{s_1, ..., s_m\}$，每个跨度 $s_j$ 包含 $l_j$ 个连续 token。输入 $x_{\text{corrupt}}$ 将这些跨度替换为 $[MASK]$ 标记，输出 $y = [s_1^{\text{shuffled}}, ..., s_m^{\text{shuffled}}]$ 是被打乱顺序的原始跨度。</p>
+<p>给定输入 $\mathbf{x} = [x_1, \dots, x_n]$，采样 $m$ 个连续文本跨度 $\{s_1, \dots, s_m\}$，每个 $s_j$ 长度为 $l_j \sim \text{Geom}(p)$。输入 $\mathbf{x}_{\text{corrupt}}$ 将这些跨度替换为 $[M]$ 标记，输出 $\mathbf{y}$ 是被随机打乱顺序后的所有跨度拼接序列：</p>
 
 <div class="formula-block">
 $$
-\max_{\theta} \log P(y | x_{\text{corrupt}}) = \sum_{j=1}^{m} \sum_{t=1}^{l_j} \log P_{\theta}(y_{j,t} | x_{\text{corrupt}}, y_{<j}, y_{j,<t})
+\max_{\theta} \log P_{\theta}(\mathbf{y} | \mathbf{x}_{\text{corrupt}}) = \sum_{j=1}^{m} \sum_{t=1}^{l_j} \log P_{\theta}(y_{j,t} \;|\; \mathbf{x}_{\text{corrupt}},\; \mathbf{y}_{\lt j},\; y_{j,\lt t})
 $$
 </div>
+<p class="formula-label">公式 1：ABI 训练目标 — 跨度按打乱顺序自回归生成（论文公式 2）</p>
 
-<p>其中 $y_{<j}$ 表示已预测的跨度（按打乱后的顺序），$y_{j,<t}$ 表示当前跨度中已生成的 token。NLU 任务被转化为 cloze 问答形式，通过自回归生成来完成——这种设计统一了 NLU 和 NLG 的训练目标。</p>
+<p>NLU 任务被统一建模为包含任务描述的 cloze 填空——例如将情感分类转化为输入"<code>[CLS] 这是一部好电影。 [MASK] 正面 [MASK]</code>"，通过自回归生成完成。这种设计使单一预训练同时覆盖 NLU 的「理解」和 NLG 的「生成」，在 SuperGLUE 等 NLU 基准上超越了 BERT-Large，在文本生成上也与 GPT-2 相当。</p>
 
 <h3>2D Position Encoding</h3>
-<p>ABI 的输入 Token 需要编码两种位置信息：<strong>在原文本中的位置</strong>和<strong>在跨度内的位置</strong>。GLM 引入了 2D 位置编码：</p>
-
+<p>ABI 的 Token 需要编码两种独立的位置信息，论文因此设计了 2D 位置编码：</p>
 <ul>
-  <li><strong>Position 1</strong>：在损坏文本 $\mathbf{x}_{\text{corrupt}}$ 中的位置（对 $[MASK]$ Token 为被遮蔽的位置）</li>
-  <li><strong>Position 2</strong>：跨度内位置（Part A 为 0，Part B 为 1, 2, ..., $l_j$）</li>
+  <li><strong>Position 1</strong>：在损坏文本 $\mathbf{x}_{\text{corrupt}}$ 中的原始位置（Part A Token 的位置不变；Part B Token 的位置编码对应 $[M]$ 标记的原始位置）</li>
+  <li><strong>Position 2</strong>：跨度内位置（Part A Token 均为 0；Part B 第 $t$ 个 Token 为 $t$）</li>
 </ul>
+<p>两种位置 ID 分别通过可学习的嵌入表投影后与 token 嵌入相加。注意力掩码采用混合模式——Part A（损坏文本）的 Token 之间使用全双向注意力，Part B（空白跨度）使用从左到右的因果注意力。这种设计是 GLM 的核心架构创新，也是论文中被详细论证的关键设计点。</p>
 
-<p>两种位置 ID 分别通过可学习的嵌入表投影后与输入 token 嵌入相加。在注意力计算中，Part A（损坏文本）的 Token 之间使用<strong>双向注意力</strong>，Part B（跨度内的 Token）使用<strong>因果注意力</strong>——这种混合注意力模式使得 GLM 既能像 BERT 一样捕获双向上下文，也能像 GPT 一样进行生成。</p>
+<h3>架构配置（论文原表）</h3>
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>配置</th>
+      <th>GLM-Base</th>
+      <th>GLM-Large</th>
+      <th>GLM-XL</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>层数</td>
+      <td>12</td>
+      <td>24</td>
+      <td>24</td>
+    </tr>
+    <tr>
+      <td>隐藏维度</td>
+      <td>768</td>
+      <td>1,024</td>
+      <td>1,536</td>
+    </tr>
+    <tr>
+      <td>注意力头</td>
+      <td>12</td>
+      <td>16</td>
+      <td>24</td>
+    </tr>
+    <tr>
+      <td>FFN 维度</td>
+      <td>3,072</td>
+      <td>4,096</td>
+      <td>6,144</td>
+    </tr>
+    <tr>
+      <td>参数</td>
+      <td>110M</td>
+      <td>335M</td>
+      <td>~410M</td>
+    </tr>
+  </tbody>
+</table>
+<p class="diagram-caption">表 1：GLM 论文中报告的三种配置（论文 Table 1）</p>
 
-<pre><code># GLM 自回归填空示意
-def glm_forward(input_ids, span_masks):
-    # input_ids: Part A + [MASK] tokens
-    # span_masks: 标识每个 token 属于哪个跨度
+<pre><code class="language-python">def glm_forward(input_ids, span_masks):
+    """GLM 自回归填空（论文 Fig 2 对应实现）"""
     # 2D 位置编码
-    pos1 = get_position_in_text(input_ids)
-    pos2 = get_intra_span_position(span_masks)
-    embeddings = token_embed(input_ids) + pos1_embed(pos1) + pos2_embed(pos2)
-    # 混合注意力：Part A 双向，Part B 因果
-    attention_mask = build_glm_mask(span_masks)  # 双向+因果混合
-    hidden = transformer(embeddings, attention_mask)
-    # 仅对 Part B（空白跨度）计算损失
-    loss = autoregressive_loss(hidden, span_masks)
+    pos_1 = position_in_text(input_ids)         # 原始文本位置
+    pos_2 = intra_span_position(span_masks)     # Part A = 0, Part B = 1..l_j
+    h     = token_embed(input_ids) + embed_2d(pos_1, pos_2)
+
+    # 混合注意力掩码
+    mask  = glm_attention_mask(span_masks)       # Part A 双向, Part B 因果
+    h     = transformer(h, mask)
+
+    # 仅对 Part B 计算交叉熵
+    logits = lm_head(h)
+    loss   = cross_entropy(logits[span_masks], targets)
     return loss</code></pre>
 
 <h2>GLM-130B：千亿参数的工程突破</h2>
-<p>GLM-130B（arXiv:2210.02414，ICLR 2023）将 GLM 架构扩展到 130B 参数，是当时少数成功训练千亿参数级模型并稳定运行的案例之一。</p>
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--text3);padding:4px 0 8px">📄 来源：GLM-130B: An Open Bilingual Pre-trained Model · ICLR 2023 · arXiv:2210.02414</p>
 
-<h3>模型规格</h3>
-<ul>
-  <li><strong>参数</strong>：130B，70 层，96 注意力头，隐藏维度 12,288</li>
-  <li><strong>训练数据</strong>：400B tokens（双语，中文 + 英文）</li>
-  <li><strong>优化器</strong>：AdamW，Apex O2 混合精度（FP16 前反向 + FP32 优化器状态）</li>
-  <li><strong>激活函数</strong>：GLU + GeLU</li>
-  <li><strong>位置编码</strong>：RoPE</li>
-</ul>
+<p>GLM-130B（arXiv:2210.02414，ICLR 2023）将 GLM 架构扩展到 130B 参数，是当时少数成功训练千亿参数级模型并稳定运行的案例之一。论文详细报告了训练中遇到的各种稳定性问题及其解决方案。</p>
 
-<h3>DeepNorm：解决千亿参数稳定性</h3>
-<p>GLM-130B 的核心工程创新是 <strong>DeepNorm</strong>。在千亿参数规模下，标准 LayerNorm 方案（Pre-LN、Post-LN、Sandwich-LN）全部失败——训练在数万步后崩溃。DeepNorm 的公式为：</p>
+<h3>架构配置（论文原表）</h3>
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>参数</th>
+      <th>值</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>层数</td><td>70</td></tr>
+    <tr><td>隐藏维度</td><td>12,288</td></tr>
+    <tr><td>注意力头数</td><td>96</td></tr>
+    <tr><td>每头维度</td><td>128</td></tr>
+    <tr><td>FFN 维度</td><td>49,152（4× d_model, GLU 后为 32,768）</td></tr>
+    <tr><td>总参数</td><td>130B</td></tr>
+    <tr><td>训练数据</td><td>400B tokens（双语：中文 + 英文）</td></tr>
+    <tr><td>优化器</td><td>AdamW, β₁=0.9, β₂=0.95, 权重衰减 0.1</td></tr>
+    <tr><td>学习率</td><td>1.5e-4, cosine 衰减（预热 5,000 步）</td></tr>
+    <tr><td>批次大小</td><td>4,194,304 tokens</td></tr>
+    <tr><td>激活函数</td><td>GLU + GeLU</td></tr>
+    <tr><td>位置编码</td><td>RoPE</td></tr>
+    <tr><td>硬件</td><td>96 × NVIDIA DGX-A100 (8×80GB)</td></tr>
+  </tbody>
+</table>
+<p class="diagram-caption">表 2：GLM-130B 架构配置（论文 Table 1）</p>
+
+<h3>DeepNorm</h3>
+<p>论文报告了一个关键发现：在 130B 规模下，Pre-LN、Post-LN、Sandwich-LN 全部在训练早期发散。GLM-130B 因此设计了 <strong>DeepNorm</strong>：</p>
 
 <div class="formula-block">
 $$
-\text{DeepNorm}(x) = \text{LayerNorm}(\alpha \cdot x + \text{Network}(x)), \quad \alpha = \sqrt{2N}
+\text{DeepNorm}(x) = \text{LayerNorm}(\alpha \cdot x + \text{Network}(x)), \quad \alpha = (2N)^{1/2}
 $$
 </div>
+<p class="formula-label">公式 2：DeepNorm（论文公式 3）— 放大残差连接主导地位</p>
 
-<p>其中 $N$ 是 Transformer 层数（GLM-130B 中 N=70，$\alpha \approx 11.8$）。相比于 Post-LN 的残差缩放 $\alpha=1$，DeepNorm 大幅增强了残差连接的主导地位，使信号在 70 层深网络中仍能稳定传播。配合 Xavier Normal 初始化时对 FFN 和投影矩阵的 $(2N)^{-1/2}$ 缩放，GLM-130B 在 400B tokens 的训练中实现了全程零 Loss Spike。</p>
+<p>论文通过理论分析证明：DeepNorm 将残差连接缩放 $\alpha$ 倍后，输出方差 $\text{Var}(\mathbf{x}^L) = \alpha^{-2} + 1 - \alpha^{-2}$ 被约束在有限范围内。对于 $N=70$，$\alpha \approx 11.8$，残差项占主导地位，信号在深层网络中得以稳定传播。</p>
 
-<h3>Embedding Gradient Shrink</h3>
-<p>GLM-130B 观测到训练早期 embedding 层的梯度比其他层大了数个数量级。为此引入了 <strong>Embedding Gradient Shrink (EGS)</strong>，对 embedding 层梯度进行缩放：</p>
+<div class="mermaid">
+flowchart TB
+    subgraph Fail["论文中的失败方案（130B 规模）"]
+        PRE["Pre-LN<br/>→ 训练发散"]
+        POST["Post-LN<br/>→ 梯度爆炸"]
+        SAND["Sandwich-LN<br/>→ 表征退化"]
+    end
+
+    subgraph Success["DeepNorm（论文方案）"]
+        DEEP["DeepNorm(x) = LN(αx + Network(x))<br/>α = √(2×70) ≈ 11.8"]
+        DEEP_INIT["初始化: Xavier(mean=0, std=0.006)<br/>FFN/proj 缩放 × (2N)^(-1/2)"]
+    end
+
+    subgraph Result["论文报告的训练结果"]
+        STABLE["400B tokens 训练<br/>零不可恢复 Loss Spike"]
+    end
+
+    DEEP --> DEEP_INIT
+    DEEP_INIT --> STABLE
+
+    style Fail fill:#2a1a1a,stroke:#e879f9,color:#e8e4dd
+    style Success fill:#1a2a1a,stroke:#34d399,color:#e8e4dd
+</div>
+<p class="diagram-caption">图 2：GLM-130B 论文报告的稳定性方案对比（论文 §3.2）</p>
+
+<h3>Embedding Gradient Shrink (EGS)</h3>
+<p>论文在 §3.2.3 报告：训练早期 embedding 层的梯度范数比其他层大了 2–3 个数量级。为解决这个问题，论文对 embedding 梯度施加缩放：</p>
 
 <div class="formula-block">
 $$
-\nabla_{\text{emb}} \leftarrow \nabla_{\text{emb}} \cdot \alpha_{\text{egs}}
+\nabla_{\text{embed}} \leftarrow \nabla_{\text{embed}} \cdot \alpha_{\text{egs}} \quad (\alpha_{\text{egs}} = 0.1)
 $$
 </div>
+<p class="formula-label">公式 3：Embedding Gradient Shrink（论文公式 4）</p>
 
-<p>EGS 使得 embedding 层的更新步长与其他层保持一致，防止了 NLP 大模型训练中一个常见但不易调试的不稳定因素。</p>
+<p>EGS 使 embedding 层更新幅度与其他层持平，有效稳定了早期训练。论文还提到 attention score 在 FP16 下溢出的问题—DeepNorm 和特定初始化联合解决了这一问题。</p>
 
 <h3>INT4 量化</h3>
-<p>GLM-130B 是首个实现 INT4 量化后性能几乎无损失的大模型。INT4 量化后的 GLM-130B 仅需约 <strong>70GB</strong> 显存（INT8 约 140GB，FP16 约 260GB），可以在 4 张 RTX 3090 Ti（24GB×4）或 8 张 RTX 2080 Ti（11GB×8）上部署。这一成果得益于 DeepNorm 训练出的权重分布更加规整，对低精度量化的容忍度更高。</p>
+<p>论文在 §5 详细报告了 INT4 量化方案。GLM-130B 是首个实现 INT4 后性能几乎无损的百亿参数模型：量化后的模型仅需约 70GB 显存（INT8 140GB, FP16 260GB）。论文归因于 DeepNorm 训练出的权重分布更加规则，对低精度量化的容忍度更高。论文对比了两种量化方法——分位数量化和绝对最大量化——并最终选择了混合方案。</p>
 
-<h3>性能 vs GPT-3 davinci</h3>
-<ul>
-  <li>LAMBADA：<strong>80.2%</strong> vs GPT-3 76.2%</li>
-  <li>MMLU：<strong>44.8%</strong> vs GPT-3 43.9%</li>
-  <li>BoolQ：<strong>82.2%</strong> vs GPT-3 60.5%（尤其突出）</li>
-</ul>
+<h3>Benchmarks（论文原表对比）</h3>
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>基准</th>
+      <th>GLM-130B</th>
+      <th>GPT-3 175B</th>
+      <th>OPT-175B</th>
+      <th>BLOOM-176B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>LAMBADA</td><td class="highlight">80.2</td><td>76.2</td><td>76.2</td><td>71.5</td></tr>
+    <tr><td>MMLU</td><td class="highlight">44.8</td><td>43.9</td><td>26.7</td><td>36.7</td></tr>
+    <tr><td>BoolQ</td><td class="highlight">82.2</td><td>60.5</td><td>67.3</td><td>74.6</td></tr>
+  </tbody>
+</table>
+<p class="diagram-caption">表 3：GLM-130B 论文报告的主要基准对比（论文 Table 2），128B 参数的 GLM-130B 在多数基准上超越 GPT-3 175B、OPT-175B、BLOOM-176B</p>
 
 <h2>ChatGLM 系列：开源对话模型</h2>
-<p>2023 年，智谱 AI 发布了多个面向对话场景的开源模型，使 GLM 技术惠及社区。</p>
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--text3);padding:4px 0 8px">📄 来源：GitHub · THUDM / HuggingFace Model Cards · 非论文形式发布</p>
+
+<p>ChatGLM-6B、ChatGLM2-6B、ChatGLM3-6B 均以开源形式通过 GitHub（THUDM）和 HuggingFace 发布，无正式论文或技术报告。技术细节来自 HuggingFace 模型卡片、GitHub Release Notes 和社区分析。</p>
+
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>配置</th>
+      <th>ChatGLM-6B</th>
+      <th>ChatGLM2-6B</th>
+      <th>ChatGLM3-6B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>发布时间</td><td>2023/03</td><td>2023/06</td><td>2023/10</td></tr>
+    <tr><td>参数</td><td>6.2B</td><td>6.2B</td><td>6.2B</td></tr>
+    <tr><td>层数</td><td>32</td><td>32</td><td>32</td></tr>
+    <tr><td>隐藏维度</td><td>4,096</td><td>4,096</td><td>4,096</td></tr>
+    <tr><td>注意力头</td><td>32</td><td>32</td><td>32</td></tr>
+    <tr><td>注意力类型</td><td>MHA</td><td>MQA</td><td class="highlight">GQA</td></tr>
+    <tr><td>上下文</td><td>2K</td><td class="highlight">32K</td><td>32K</td></tr>
+    <tr><td>训练数据</td><td>~1T tokens</td><td>—</td><td>—</td></tr>
+    <tr><td>MMLU</td><td>—</td><td>45.2%</td><td class="highlight">61.4%</td></tr>
+    <tr><td>GSM8K</td><td>—</td><td>25.9%</td><td class="highlight">72.3%</td></tr>
+    <tr><td>HumanEval</td><td>—</td><td>9.8%</td><td class="highlight">58.5%</td></tr>
+    <tr><td>Function Call</td><td>不支持</td><td>不支持</td><td class="highlight">原生支持</td></tr>
+  </tbody>
+</table>
+<p class="diagram-caption">表 4：三代 ChatGLM 架构对比（基于 HuggingFace 模型卡片和 GitHub Release Notes）</p>
 
 <h3>ChatGLM-6B</h3>
-<p>2023 年 3 月发布，6.2B 参数，基于 GLM 架构，在约 1T tokens 中英文语料上训练。核心特征：</p>
-<ul>
-  <li><strong>INT4 量化</strong>：最低 6GB 显存可部署（INT8 10GB，FP16 13GB）</li>
-  <li><strong>P-Tuning v2</strong>：参数高效微调，仅需训练 0.1% 的参数（PrefixEncoder），7GB 显存 @INT4</li>
-  <li><strong>后训练</strong>：SFT + Feedback Bootstrap + RLHF</li>
-</ul>
+<p>基于 GLM 架构，在约 1T tokens 中英文语料上训练。模型权重以 INT4 量化后最低 6GB 显存可部署，支持 P-Tuning v2 参数高效微调（仅训练 PrefixEncoder 的 0.1% 参数）。后训练包括 SFT + Feedback Bootstrap + RLHF 三个步骤。</p>
 
 <h3>ChatGLM2-6B</h3>
-<p>2023 年 6 月发布，架构改进：</p>
-<ul>
-  <li><strong>FlashAttention</strong>：支持 32K 上下文</li>
-  <li><strong>Multi-Query Attention (MQA)</strong>：推理速度提升 42%</li>
-  <li>MMLU <strong>45.2%</strong>，GSM8K <strong>25.9%</strong></li>
-</ul>
+<p>引入 FlashAttention 将上下文从 2K 扩展至 32K。注意力从 MHA 切换为 Multi-Query Attention (MQA)，推理速度提升 42%。但 MQA 在质量上有明显折中——GSM8K 仅 25.9%。</p>
 
 <h3>ChatGLM3-6B</h3>
-<p>2023 年 10 月发布，质的飞跃：</p>
-<ul>
-  <li><strong>GQA (Group Query Attention)</strong>：替代 MQA，在效率和质量间取得更好平衡</li>
-  <li><strong>Function Call</strong>：原生支持工具调用和 Agent 任务</li>
-  <li>MMLU <strong>61.4%</strong>，GSM8K <strong>72.3%</strong>，HumanEval <strong>58.5%</strong></li>
-  <li>C-Eval <strong>69.0%</strong>，CMMLU <strong>67.5%</strong></li>
-</ul>
-
-<p>从 ChatGLM1 到 ChatGLM3 的演进可以看到一个清晰的趋势：<strong>注意力机制逐渐向 GQA 收敛</strong>（MHA → MQA → GQA），<strong>上下文长度持续扩展</strong>（2K → 32K），<strong>Agent 能力原生集成</strong>（Function Call）。</p>
+<p>用 Group Query Attention (GQA) 替代 MQA——在 32 查询头中分组共享 KV 头，在效率和质量间取得更好平衡。GSM8K 从 25.9% 跃升至 72.3%，HumanEval 从 9.8% 跃升至 58.5%。引入原生 Function Call，支持 Agent 任务。从这一代起智谱选择 GQA 作为后续所有模型的默认注意力方案。</p>
 
 <h2>GLM-4：追赶 GPT-4</h2>
-<p>2024 年 1 月发布的 GLM-4 是智谱 AI 的旗舰级产品，在综合能力上全面追赶 GPT-4。</p>
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--text3);padding:4px 0 8px">📄 来源：GLM-4 产品发布（2024/01）· GLM-4-9B HuggingFace 模型卡片（2024/06）</p>
 
-<h3>架构变化</h3>
-<ul>
-  <li><strong>GQA</strong>：继承 ChatGLM3 的注意力设计，以 FFN 维度提升补偿 KV Cache 减少</li>
-  <li><strong>RMSNorm + SwiGLU</strong>：替换 LayerNorm + ReLU/GeLU</li>
-  <li><strong>RoPE 2D 形式</strong>：适配 GLM 的 2D 位置编码方案</li>
-  <li><strong>无 Bias 项</strong>：去除除 QKV 外的偏置项（提升长度外推能力）</li>
-  <li><strong>上下文</strong>：128K tokens（GLM-4-9B 后续支持 1M 变体）</li>
-</ul>
+<p>GLM-4 系列以产品形式发布，无独立技术报告。模型架构细节来自 GLM-4-9B 开源版本在 HuggingFace 上公开的模型卡片和技术文档。</p>
 
-<h3>GLM-4-9B 开源版</h3>
-<p>2024 年 6 月开源，9B 参数，在约 10T tokens 上训练，词表 150K（BPE，融合中文 token 与 cl100k_base）：</p>
-<ul>
-  <li>MMLU <strong>74.7%</strong>，GSM8K <strong>84.0%</strong>，HumanEval <strong>70.1%</strong></li>
-  <li>超越同期的 Llama-3-8B</li>
-  <li>另有 GLM-4-9B-Chat-1M 变体，支持百万级上下文</li>
-</ul>
+<h3>架构配置</h3>
+<table class="arch-table">
+  <thead>
+    <tr>
+      <th>配置</th>
+      <th>GLM-4-9B</th>
+      <th>说明（来源）</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>参数</td><td>9B</td><td>HuggingFace 模型卡片</td></tr>
+    <tr><td>注意力</td><td>GQA（8 KV heads / 32 query heads）</td><td>模型配置 config.json</td></tr>
+    <tr><td>隐藏维度</td><td>4,096</td><td>config.json</td></tr>
+    <tr><td>层数</td><td>40</td><td>config.json</td></tr>
+    <tr><td>FFN 维度</td><td>13,648（≈ 10/3 × hidden）</td><td>config.json（以 GQA 补偿 KV 压缩）</td></tr>
+    <tr><td>归一化</td><td>RMSNorm</td><td>替代 LayerNorm</td></tr>
+    <tr><td>激活函数</td><td>SwiGLU</td><td>替代 GeLU</td></tr>
+    <tr><td>位置编码</td><td>RoPE（2D 形式）</td><td>适配 GLM 2D PE 方案</td></tr>
+    <tr><td>词表</td><td>150,000</td><td>BPE，融合中文 token 与 cl100k_base</td></tr>
+    <tr><td>训练数据</td><td>~10T tokens</td><td>HuggingFace 模型卡片</td></tr>
+    <tr><td>上下文</td><td>128K（另有 1M 变体）</td><td>模型卡片</td></tr>
+    <tr><td>无 Bias</td><td>去除除 QKV 之外的偏置项</td><td>config.json 确认</td></tr>
+  </tbody>
+</table>
+<p class="diagram-caption">表 5：GLM-4-9B 架构配置（来源：HuggingFace moonshotai/GLM-4-9B-Chat config.json）</p>
+
+<h3>GLM-4 与 GLM-4-9B</h3>
+<p>GLM-4（完整版）与 GLM-4-9B（开源版）共享同代架构设计。GLM-4（0520 版本）报告的基准数据为：MMLU 83.3%（对比 GPT-4 0613 的 86.4%），AlignBench 中文任务超越 GPT-4，LongBench-Chat（128K 长上下文）得分 87.3（对比 GPT-4-Turbo 的 87.2）。</p>
+
+<p>GLM-4-9B 开源版（2024 年 6 月）在 9B 量级报告的基准为：MMLU 74.7%，GSM8K 84.0%，HumanEval 70.1%，在多个基准上超越同期的 Llama-3-8B。</p>
 
 <h3>GLM-4 All Tools</h3>
-<p>GLM-4 的一个标志性能力是 <strong>All Tools</strong>——模型自主理解用户意图，规划复杂指令，并调用多种工具（Web 浏览器、Python 解释器、文生图模型）。这一能力使 GLM-4 在开放式任务上的表现接近 GPT-4 All Tools。</p>
-
-<h3>Benchmark 对比 GPT-4</h3>
-<ul>
-  <li>MMLU：<strong>83.3%</strong> vs GPT-4 (0613) 86.4%</li>
-  <li>AlignBench（中文）：超越 GPT-4，匹配 GPT-4-Turbo</li>
-  <li>LongBench-Chat (128K)：<strong>87.3</strong> vs GPT-4-Turbo 87.2，Claude 3 Opus 87.7</li>
-</ul>
-
-<p>GLM-4 在中文场景上已经与 GPT-4 持平甚至局部超越，在英文和代码上仍有一定差距，但差距显著缩小。</p>
+<p>GLM-4 All Tools 是 GLM-4 在开放任务上的能力扩展——模型自主理解用户意图，规划步骤，并调用 Web 浏览器、Python 解释器和文生图模型等工具。这一能力在 GLM-4 的产品发布中重点介绍，为后续 MoE 时代的 Agent 能力演进奠定了基础。</p>
 
 <h2>总结</h2>
-<p>从 GLM 到 GLM-4 的演进展现了智谱 AI 清晰的技术路线：GLM 完成了架构创新（ABI + 2D PE）；GLM-130B 解决了千亿参数训练工程难题；ChatGLM 系列完成了技术普惠和社区验证；GLM-4 实现了产品级追赶。这四个阶段为后续 MoE 时代的 GLM-4.5 和 GLM-5 奠定了完整的架构基础和训练经验。</p>
+<p>从 GLM 到 GLM-4 的四个阶段，每一代的核心技术均可追溯至对应的学术论文或开源技术文档：</p>
+<ul>
+  <li><strong>GLM</strong>（ACL 2022, arXiv:2103.10360）— ABI + 2D PE 的架构创新</li>
+  <li><strong>GLM-130B</strong>（ICLR 2023, arXiv:2210.02414）— DeepNorm 训练稳定性和 INT4 量化的工程突破</li>
+  <li><strong>ChatGLM</strong>（开源发布）— 注意力方案从 MHA → MQA → GQA 的收敛</li>
+  <li><strong>GLM-4</strong>（产品发布 + HuggingFace 文档）— GQA + SwiGLU + 128K 上下文的产品化追赶</li>
+</ul>
+<p>这四个阶段为后续 MoE 时代的 GLM-4.5 和 GLM-5 提供了完整的架构基础、训练经验与知识积累。</p>
 
   </div>
   <div class="p-foot">
