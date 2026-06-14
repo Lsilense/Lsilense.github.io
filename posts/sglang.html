@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SGLang 技术解析：高性能 LLM 推理框架 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
+
+.post-detail .p-body .bili-section { margin: 20px 0 28px; padding: 16px; background: var(--code-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md); }
+.post-detail .p-body .bili-section .bili-label { font-family: var(--font-mono); font-size: .7rem; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.post-detail .p-body .bili-section .bili-label svg { flex-shrink: 0; }
+.post-detail .p-body .bili-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.post-detail .p-body .bili-grid .bili-card { flex: 1; min-width: 200px; }
+.post-detail .p-body .bili-grid .bili-card iframe { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); border: none; }
+.post-detail .p-body .bili-grid .bili-card .bili-title { font-size: .75rem; color: var(--text2); margin-top: 4px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.post-detail .p-body .bili-grid .bili-card .bili-play { font-size: .65rem; color: var(--text3); font-family: var(--font-mono); }
+
+.post-detail .p-body .bili-grid .bili-card .bili-embed-wrap { position: relative; }
+.post-detail .p-body .bili-grid .bili-card .bili-dur { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.75); color: #fff; font-size: .65rem; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); }
+.post-detail .p-body .bili-grid .bili-card .bili-meta { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+.post-detail .p-body .bili-grid .bili-card .bili-play { font-size: .65rem; color: var(--text3); font-family: var(--font-mono); }
+
+.post-detail .p-body .cmd-block { background: var(--code-bg); border-radius: var(--radius-md); margin: 16px 0; overflow: hidden; border: 1px solid var(--border); }
+.post-detail .p-body .cmd-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: .75rem; color: var(--text3); }
+.post-detail .p-body .cmd-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+.post-detail .p-body .cmd-header .dot.red { background: #ff5f57; }
+.post-detail .p-body .cmd-header .dot.yellow { background: #ffbd2e; }
+.post-detail .p-body .cmd-header .dot.green { background: #28c840; }
+.post-detail .p-body .cmd-body { padding: 14px 16px; overflow-x: auto; }
+.post-detail .p-body .cmd-body code { font-family: var(--font-mono); font-size: .78125rem; line-height: 1.7; color: var(--text2); white-space: pre; }
+.post-detail .p-body .param-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .85rem; }
+.post-detail .p-body .param-table th { background: var(--code-bg); text-align: left; padding: 8px 12px; font-weight: 600; border: 1px solid var(--border); }
+.post-detail .p-body .param-table td { padding: 8px 12px; border: 1px solid var(--border); }
+.post-detail .p-body .param-table tr:hover td { background: var(--code-bg); }
+.post-detail .p-body .param-table .param-name { font-family: var(--font-mono); font-size: .8rem; color: var(--copper); white-space: nowrap; }
+.post-detail .p-body .feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 16px 0; }
+.post-detail .p-body .feat-card { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; }
+.post-detail .p-body .feat-card h4 { margin: 0 0 6px; font-size: .9rem; font-weight: 600; }
+.post-detail .p-body .feat-card p { margin: 0; font-size: .8rem; color: var(--text2); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<main class="post-detail">
+<article>
+<header class="p-header">
+  <div class="p-meta">
+    <span class="p-tag">模型推理</span>
+    <span class="p-tag">SGLang</span>
+    <span class="p-tag">Qwen</span>
+    <span class="p-date">2026-06-14</span>
+  </div>
+  <h1 class="p-title">SGLang 技术解析：高性能 LLM 推理框架</h1>
+  <div class="p-desc">深入解析 SGLang 推理框架的核心技术：RadixAttention 自动前缀缓存实现 KV Cache 极致复用、Zero-Overhead 批调度器、Compressed FSM 结构化输出加速，以及 Qwen 全系列模型的高效推理部署实践。</div>
+</header>
+
+<div class="p-body">
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--text3);padding:4px 0 8px">📄 来源：SGLang: Efficient Execution of Structured Language Model Programs · arXiv:2312.07104 · GitHub: sgl-project/sglang · LMSYS 组织</p>
+
+<h2>一、背景与简介</h2>
+
+<p>大语言模型推理服务中，KV Cache 的重复计算和显存管理是核心瓶颈。多轮对话中每轮都需要重新编码历史消息的 KV Cache；批量推理时共享前缀（System Prompt）在不同请求间反复计算；结构化生成需要反复调用模型验证输出格式。这些问题导致 Token 生成的计算资源中，高达 60-70% 被用于重复计算而非真正的生成。</p>
+
+<p><strong>SGLang</strong> 是由 LMSYS 组织（LLM 系统评估的权威机构，隶属于 UC Berkeley 等高校联合体）开发的高性能推理框架，GitHub 星标超过 28,900，部署在超过 40 万 GPU 上，每天生成数万亿 Token。其核心创新 <strong>RadixAttention</strong> 借鉴字典树（Radix Tree）数据结构管理 KV Cache，实现自动化的前缀匹配与缓存复用，消除重复计算。同时提供结构化生成引擎和 Zero-Overhead 批调度器，在前缀复用和多轮对话场景下推理速度提升 3-7 倍。</p>
+
+<h2>二、核心架构</h2>
+
+<div class="mermaid">
+graph TD
+    subgraph "SGLang 推理框架"
+        API["OpenAI 兼容 API"] --- RT["SGLang Runtime (SRT)"]
+        FE["SGLang Frontend<br/>Python SDK"] --- RT
+        DIFF["SGLang Diffusion<br/>图像/视频生成"] --- RT
+
+        subgraph RT["SGLang Runtime (SRT)"]
+            RA["RadixAttention<br/>前缀树缓存引擎"]
+            SCHED["Zero-Overhead<br/>批调度器"]
+            CB["Continuous Batching<br/>动态批处理"]
+            FS["Compressed FSM<br/>结构化输出引擎"]
+        end
+
+        RT --- Kernel["计算内核"]
+        subgraph Kernel["推理内核"]
+            FA["FlashInfer<br/>FlashAttention"]
+            MLA["DeepSeek MLA<br/>优化内核"]
+            TP["Tensor/Pipeline/EP"]
+            QUANT["量化: FP4/FP8/INT4"]
+        end
+
+        RT --- EXT["扩展支持"]
+        subgraph EXT["扩展特性"]
+            MUL["多模态输入<br/>图像/视频/音频"]
+            PD["Prefill/Decode<br/>分离部署"]
+            RL["RL 后端<br/>/ GRPO 训练"]
+        end
+    end
+
+    style RA fill:#1f222a,stroke:#d9772b
+    style SCHED fill:#1f222a,stroke:#d9772b
+    style FS fill:#1f222a,stroke:#d9772b
+    style Kernel fill:#111318,stroke:#d9772b
+</div>
+<div class="diagram-caption">图 1：SGLang 整体架构</div>
+
+<h3>2.1 RadixAttention：前缀树缓存引擎</h3>
+
+<p>RadixAttention 是 SGLang 最核心的架构创新，基于 Radix Tree（前缀树 / 字典树）数据结构组织 KV Cache：</p>
+
+<ul>
+  <li><strong>树状存储</strong>：每个请求的 Token 序列按前缀拆分为树节点。共享前缀（如 System Prompt "你是 Qwen3 助手"）只需存一份，多轮对话中自动追加子节点</li>
+  <li><strong>最长前缀匹配</strong>：新请求到达时，自动匹配 Radix Tree 中最长的公共前缀，直接复用对应节点的 KV Cache。匹配度越高，节省计算量越大</li>
+  <li><strong>LRU 驱逐策略</strong>：缓存空间满时淘汰最近最少使用的节点，保证高频前缀长期驻留</li>
+  <li><strong>无需手动配置</strong>：与 vLLM 的 Prefix Caching 不同，RadixAttention 原生支持任意长度的前缀匹配，不依赖固定 Block 粒度</li>
+</ul>
+
+<p>在 System Prompt 相同的多轮对话场景中，RadixAttention 可消除 100% 的历史 KV Cache 重计算。在多模态场景（如图像 Token 前缀复用）和 Few-shot 批量推理中同样效果显著。</p>
+
+<h2>三、核心推理优化技术</h2>
+
+<div class="feat-grid">
+  <div class="feat-card">
+    <h4>Zero-Overhead 批调度</h4>
+    <p>调度器在每次前向传播前计算请求维度，直接填充 GPU 内核参数，消除调度开销。相比传统 Scheduler 的 Host-Device 同步开销降低近 0%。</p>
+  </div>
+  <div class="feat-card">
+    <h4>Compressed FSM</h4>
+    <p>将 JSON Schema 编译为压缩有限状态机（Compressed FSM），推理时按 FSM 引导 Token 采样，JSON 解码速度快 3 倍，且保证输出格式 100% 合法。</p>
+  </div>
+  <div class="feat-card">
+    <h4>Prefill/Decode 分离</h4>
+    <p>将 Prefill 和 Decode 部署到不同 GPU 组，Prefill 节点优化计算吞吐（如 96 H100），Decode 节点优化 KV Cache 容量和批次大小，支持跨节点 KV 传输。</p>
+  </div>
+  <div class="feat-card">
+    <h4>FlashInfer 内核</h4>
+    <p>深度集成 FlashInfer 注意力内核库，提供高效的分页注意力、MLA 解码、融合 attention+softmax 等算子。SGLang 是 FlashInfer 的核心维护者。</p>
+  </div>
+  <div class="feat-card">
+    <h4>DeepSeek MLA 优化</h4>
+    <p>对 DeepSeek MLA（Multi-head Latent Attention）架构做专用内核优化，在 KV Cache 压缩场景下达到 7 倍加速，是首批支持 MLA 的推理引擎。</p>
+  </div>
+  <div class="feat-card">
+    <h4>多模态推理</h4>
+    <p>原生支持视觉、音频、视频等多模态输入。图像 Token 的前缀缓存可避免重复编码。此外还支持 SGLang Diffusion 用于图像和视频生成。</p>
+  </div>
+</div>
+
+<h3>3.1 结构化输出：Compressed FSM</h3>
+
+<p>SGLang 结构化输出核心技术将 JSON Schema → 确定性有限自动机（DFA）→ 压缩有限状态机（Compressed FSM）。传统方法在每一步解码时遍历所有合法 Token 进行格式验证，而 Compressed FSM 将多个连续字符的合法序列压缩为单步约束，大幅减少验证次数。在复杂 JSON Schema 输出场景下，相比 Outlines 和 Guidance 等方案吞吐提升 3 倍。</p>
+
+<h2>四、Qwen 推理部署实践</h2>
+
+<p>SGLang 对 Qwen 全系列模型提供原生支持，包括对话模板自动识别和多模态输入处理。</p>
+
+<h3>4.1 基础推理：单卡部署 Qwen3-4B</h3>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">SGLang 单卡推理 Qwen3-4B</span></div>
+<div class="cmd-body"><code># 安装
+pip install sglang[all]
+
+# OpenAI 兼容 API 服务
+CUDA_VISIBLE_DEVICES=0 \
+sglang serve "Qwen/Qwen3-4B-Instruct-2507" \
+    --port 8000 \
+    --tp 1 \
+    --mem-fraction-static 0.88 \
+    --max-prefill-tokens 16384</code></div>
+</div>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">Python 客户端调用</span></div>
+<div class="cmd-body"><code>from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1")
+response = client.chat.completions.create(
+    model="Qwen/Qwen3-4B-Instruct-2507",
+    messages=[
+        {"role": "system", "content": "你是 Qwen3 助手"},
+        {"role": "user", "content": "解释 RadixAttention 的原理"}
+    ],
+    temperature=0.7,
+    max_tokens=2048
+)
+print(response.choices[0].message.content)</code></div>
+</div>
+
+<h3>4.2 RadixAttention 加速多轮对话（核心优势）</h3>
+
+<p>多轮对话是 SGLang 相比其他方案最具优势的场景。RadixAttention 自动检测前缀变化，只需计算新增的对话轮次：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">Qwen3-72B 多轮对话（7× 加速）</span></div>
+<div class="cmd-body"><code>CUDA_VISIBLE_DEVICES=0,1,2,3 \
+sglang serve "Qwen/Qwen3-72B-A27B" \
+    --tp 4 \
+    --enable-prefix-caching \
+    --mem-fraction-static 0.9 \
+    --max-prefill-tokens 32768
+
+# 不需要额外配置——SGLang 自动启用 RadixAttention</code></div>
+</div>
+
+<p>第一轮：System + 用户消息（全部计算 KV Cache，存入 Radix Tree）<br>
+第二轮：System + 第一轮 Assistant 回复 + 新用户消息（仅计算新增 Token 的 KV Cache）<br>
+缓存命中使得首 Token 延迟（TTFT）在多轮对话中可降低 70-85%。</p>
+
+<h3>4.3 结构化输出 JSON</h3>
+
+<p>SGLang 的结构化输出在需要严格格式的场景中优势明显：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">Qwen3-7B 结构化 JSON 输出</span></div>
+<div class="cmd-body"><code>import sglang as sgl
+
+@sgl.function
+def extract_info(s, question):
+    # 使用 SGLang 前端语法定义结构化输出
+    s += sgl.system("你是一个信息提取助手，严格按 JSON 格式输出。")
+    s += sgl.user(question)
+    s += sgl.assistant(
+        sgl.gen("answer", max_tokens=256,
+                json_schema={
+                    "type": "object",
+                    "properties": {
+                        "entity": {"type": "string"},
+                        "relation": {"type": "string"},
+                        "confidence": {"type": "number"}
+                    },
+                    "required": ["entity", "relation"]
+                })
+    )
+
+# 启动推理引擎
+sgl.set_default_backend(sgl.Runtime(
+    model_path="Qwen/Qwen3-7B-Instruct"
+))
+
+state = extract_info.run(
+    question="苹果公司由乔布斯在 1976 年创立"
+)
+print(state["answer"])</code></div>
+</div>
+
+<h3>4.4 批量推理 Benchmark</h3>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">批量推理 Qwen2.5-7B</span></div>
+<div class="cmd-body"><code>import sglang as sgl
+
+@sgl.function
+def qa(s, question):
+    s += sgl.system("请简洁回答。")
+    s += sgl.user(question)
+    s += sgl.assistant(sgl.gen("answer"))
+
+sgl.set_default_backend(sgl.Runtime(
+    model_path="Qwen/Qwen2.5-7B-Instruct",
+    tp=1,
+))
+
+questions = [
+    "解释 RNN",
+    "什么是 Attention",
+    "什么是 Transformer"
+]
+states = qa.run_batch(
+    [{"question": q} for q in questions],
+    progress_bar=True
+)
+for s in states:
+    print(s["answer"])</code></div>
+</div>
+
+<h3>4.5 RL 训练推理后端</h3>
+
+<p>SGLang 被广泛用作 RL 训练（如 GRPO）的推理后端，已被 AReaL、Miles、slime、verl 和 Tunix 等主流后训练框架集成：</p>
+
+<div class="cmd-block">
+<div class="cmd-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span style="margin-left:auto;color:var(--text3)">GRPO 训练推理后端</span></div>
+<div class="cmd-body"><code># SGLang 作为 GRPO 推理引擎启动
+sglang serve "Qwen/Qwen3-30B-A3B" \
+    --tp 4 \
+    --mem-fraction-static 0.85 \
+    --port 30000
+
+# 训练框架连接到 SGLang 后端进行采样和推理
+# 支持异步推理 + 批处理提升通过量</code></div>
+</div>
+
+<h2>五、技术特性对比</h2>
+
+<table class="param-table">
+<tr><th>特性</th><th>SGLang</th><th>说明</th></tr>
+<tr><td class="param-name">缓存策略</td><td>RadixAttention</td><td>前缀树缓存，自动最长匹配</td></tr>
+<tr><td class="param-name">批调度</td><td>Zero-Overhead</td><td>消除 Host-Device 同步开销</td></tr>
+<tr><td class="param-name">结构化输出</td><td>Compressed FSM</td><td>JSON Schema 生成，3× 加速</td></tr>
+<tr><td class="param-name">前端 DSL</td><td>SGLang 前端语法</td><td>Python SDK 内的声明式编程</td></tr>
+<tr><td class="param-name">多模态</td><td>图像/视频/音频</td><td>原生多模态 + Diffusion 生成</td></tr>
+<tr><td class="param-name">RL 后端</td><td>AReaL/Miles/slime/verl</td><td>主流训练框架集成</td></tr>
+<tr><td class="param-name">并行策略</td><td>TP/PP/EP/Data</td><td>大规模 Expert Parallelism</td></tr>
+<tr><td class="param-name">分离部署</td><td>PD Disaggregation</td><td>跨节点 KV 传输</td></tr>
+<tr><td class="param-name">量化</td><td>FP4/FP8/INT4/AWQ/GPTQ</td><td>完整量化支持</td></tr>
+<tr><td class="param-name">硬件</td><td>NVIDIA/AMD/Intel/TPU/昇腾</td><td>广泛硬件适配</td></tr>
+</table>
+
+<h2>六、vLLM vs SGLang 选型参考</h2>
+
+<table class="param-table">
+<tr><th>场景</th><th>推荐方案</th><th>理由</th></tr>
+<tr><td>通用高吞吐推理</td><td>vLLM</td><td>生态成熟，社区最大，模型覆盖最广</td></tr>
+<tr><td>多轮对话场景</td><td>SGLang</td><td>RadixAttention 前缀复用效果最优</td></tr>
+<tr><td>结构化输出（JSON）</td><td>SGLang</td><td>Compressed FSM 3× 加速</td></tr>
+<tr><td>RL 训练推理后端</td><td>SGLang</td><td>主流 RL 框架首选后端</td></tr>
+<tr><td>DeepSeek MLA 推理</td><td>SGLang</td><td>专用 MLA 内核，7× 加速</td></tr>
+<tr><td>多模态推理</td><td>SGLang</td><td>原生多模态 + 前缀缓存避免重复编码</td></tr>
+<tr><td>离线批量处理</td><td>vLLM / SGLang</td><td>两者均支持，vLLM Python SDK 更简洁</td></tr>
+<tr><td>生产部署</td><td>vLLM / SGLang</td><td>两者均经超大规模验证</td></tr>
+</table>
+
+<h2>七、总结</h2>
+
+<p>SGLang 通过 RadixAttention 开创性地将前缀树结构引入 KV Cache 管理，与 vLLM 形成互补优势：</p>
+
+<ul>
+  <li><strong>前缀缓存最优</strong>：RadixAttention 自动实现任意长度的前缀匹配与复用，在多轮对话、Few-shot 批量推理等场景中消除大量重复计算</li>
+  <li><strong>结构化输出领先</strong>：Compressed FSM 技术将 JSON Schema 编译为压缩状态机，保证输出格式 100% 合法且推理速度 3 倍于替代方案</li>
+  <li><strong>RL 生态核心</strong>：作为 AReaL、Miles、slime、verl 等主流后训练框架的推理后端，SGLang 已成为 GRPO 强化学习训练的事实标准</li>
+  <li><strong>MLA 架构深度优化</strong>：对 DeepSeek 等模型的 MLA Attention 做专用内核优化，是目前 MLA 推理最快的引擎之一</li>
+  <li><strong>Qwen 完整支持</strong>：Qwen 系列全模型原生适配，对话模板自动识别，多模态输入无缝集成</li>
+</ul>
+
+<p>SGLang 部署在超过 40 万 GPU 上，日处理数万亿 Token，经 xAI、NVIDIA、AMD、LinkedIn、Cursor 等头部企业验证。对于多轮对话密集型场景和结构化输出需求，SGLang 是最具竞争力的选择。</p>
+
+</div>
+</article>
+</main>
+
+<footer class="p-footer">
+  <div class="p-footer-inner">
+    <a href="../posts.html" class="p-back">← 返回文章列表</a>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

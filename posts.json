@@ -201,5 +201,27 @@
     "tags": [
       "模型训练"
     ]
+  },
+  {
+    "id": "vllm",
+    "title": "vLLM 技术解析：高性能 LLM 推理引擎",
+    "date": "2026-06-14",
+    "excerpt": "深入解析 vLLM 推理引擎的核心技术：PagedAttention 显存管理实现近零浪费、Continuous Batching 动态调度、FlashAttention 加速内核、多级量化支持，以及 Qwen 全系列模型的推理部署实践。",
+    "tags": [
+      "模型推理",
+      "vLLM",
+      "Qwen"
+    ]
+  },
+  {
+    "id": "sglang",
+    "title": "SGLang 技术解析：高性能 LLM 推理框架",
+    "date": "2026-06-14",
+    "excerpt": "深入解析 SGLang 推理框架的核心技术：RadixAttention 自动前缀缓存实现 KV Cache 极致复用、Zero-Overhead 批调度器、Compressed FSM 结构化输出加速，以及 Qwen 全系列模型的高效推理部署实践。",
+    "tags": [
+      "模型推理",
+      "SGLang",
+      "Qwen"
+    ]
   }
 ]
