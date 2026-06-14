@@ -143,7 +143,7 @@ function renderTags(){
   fTags.innerHTML='<button class="f-tag'+(filter.tag?'':' active')+'" data-t="">全部</button>'+
     a.map(function(t){return '<button class="f-tag'+(filter.tag===t?' active':'')+'" data-t="'+esc(t)+'">'+esc(t)+'</button>'}).join('');
   fTags.querySelectorAll('.f-tag').forEach(function(b){
-    b.addEventListener('click',function(){setFilter(b.dataset.tag||null)});
+    b.addEventListener('click',function(){setFilter(b.dataset.t||null)});
   });
 }
 
