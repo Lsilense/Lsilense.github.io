@@ -3,12 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Kimi 大模型技术解析 · Lsilense</title>
+<title>Kimi Chat 技术解析：超长上下文奠基者 · Lsilense</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
 <script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+</style>
 </head>
 <body>
 
@@ -32,129 +83,181 @@
 <article class="post-detail">
   <a href="../posts.html" class="back-link">← 返回文章列表</a>
   <div class="p-heading">
-    <h1>Kimi 大模型技术解析：超长上下文与 MoE 架构</h1>
+    <h1>Kimi Chat 技术解析：超长上下文奠基者</h1>
     <div class="p-meta">
-      <span>📅 2026 年 6 月 11 日</span>
+      <span>📅 2026 年 6 月 14 日</span>
       <span>🏷️ <a href="../posts.html?tag=Kimi" style="color:var(--copper-light)">Kimi</a></span>
     </div>
   </div>
   <div class="p-body">
 
 <h2>引言</h2>
-<p>Kimi 是由月之暗面（Moonshot AI）开发的大型语言模型系列。自推出以来，Kimi 以业界领先的超长上下文窗口著称——从最初的 128K、200 万 token，到 Kimi K2 版本实现千万级 token 的上下文支持。本文将深入分析 Kimi 的核心技术方案，包括其 MoE 架构、长上下文技术以及训练推理优化策略。</p>
-<div class="bili-section">
-  <div class="bili-label">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--copper-light)"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.558 3.76v7.36c-.034 1.51-.554 2.769-1.558 3.773s-2.262 1.524-3.773 1.558H5.333c-1.51-.034-2.769-.554-3.773-1.558S.036 18.858.002 17.347v-7.36c.034-1.511.554-2.77 1.558-3.773C2.564 5.21 3.823 4.69 5.333 4.653h.854L4.855 2.4a.458.458 0 01.075-.587.457.457 0 01.31-.133.469.469 0 01 .298.112l2.688 2.848h3.215l2.688-2.848c.09-.08.2-.12.32-.12a.466.466 0 01.299.133.464.464 0 01.074.587l-1.333 2.24zm-9.6 2.24a.458.458 0 00-.458.458v.853c0 .251.206.458.458.458h.854a.458.458 0 00.458-.458v-.853a.458.458 0 00-.458-.458h-.854zm9.28 1.92a.458.458 0 00-.299.112l-2.283 2.027-2.283-2.027a.469.469 0 00-.299-.112.466.466 0 00-.299.112l-2.283 2.027-2.283-2.027a.469.469 0 00-.299-.112.458.458 0 00-.299.79l2.155 1.941-2.176 2.24a.456.456 0 00.32.77c.117 0 .23-.043.32-.123l2.262-2.347 2.283 2.347c.09.08.203.123.32.123a.456.456 0 00.32-.77l-2.176-2.24 2.155-1.941a.458.458 0 00-.149-.79z"/></svg>
-    推荐视频
-  </div>
-  <div class="bili-grid">
-    <div class="bili-card">
-      <iframe src="//player.bilibili.com/player.html?bvid=BV1MMw1zaESW&page=1&autoplay=0" loading="lazy" allowfullscreen></iframe>
-      <div class="bili-title">深入解读 Kimi 爆火论文 — 注意力残差</div>
-      <div class="bili-play">267,134 播放</div>
-    </div>
-    <div class="bili-card">
-      <iframe src="//player.bilibili.com/player.html?bvid=BV1uR9JYjEAp&page=1&autoplay=0" loading="lazy" allowfullscreen></iframe>
-      <div class="bili-title">深度解读 Kimi K1.5 Paper</div>
-      <div class="bili-play">22,831 播放</div>
-    </div>
-    <div class="bili-card">
-      <iframe src="//player.bilibili.com/player.html?bvid=BV1rqPce3EWB&page=1&autoplay=0" loading="lazy" allowfullscreen></iframe>
-      <div class="bili-title">Kimi MoBA 论文：MoE 和 Block Attention 创新组合</div>
-      <div class="bili-play">5964 播放</div>
-    </div>
-  </div>
+<p>2023 年 10 月，月之暗面（Moonshot AI）发布了 Kimi Chat——一款以超长上下文窗口为核心卖点的大语言模型产品。在 GPT-4 标准 32K、Claude 100K 的年代，Kimi 以 <strong>128K 上下文窗口</strong>直接拉高了行业标杆，随后又扩展至 200 万 token。Kimi Chat 的成功不仅验证了长上下文技术的实用性，也为后续 K 系列模型奠定了技术基础。</p>
+
+<p>本文作为 Kimi 系列四部曲的第一篇，聚焦 Kimi Chat 奠基期的核心技术：Dense Transformer 架构、Full Attention 与 Ring Attention 分布式训练、Mooncake 推理架构，以及位置编码与长度外推方案。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>相关论文：</strong>Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving · arXiv:2407.00079
+</p>
+
+<div class="mermaid">
+flowchart LR
+    subgraph Era["上下文长度演进 (2023-2024)"]
+        GPT4["GPT-4<br/>32K"]
+        CLAUDE["Claude<br/>100K"]
+        KIMI["Kimi Chat<br/>128K → 200万"]
+        GEMINI["Gemini 1.5<br/>1M"]
+    end
+    GPT4 --> CLAUDE --> KIMI
+    CLAUDE --> GEMINI
+    style KIMI stroke:#d9772b,stroke-width:3px
+</div>
+<p class="diagram-caption">图 1：Kimi Chat 发布时的上下文窗口对比——128K 在当时位居行业最前列</p>
+
+<h2>模型架构</h2>
+<p>Kimi Chat 采用标准的 <strong>Dense Transformer</strong> 架构，使用 <strong>Full Attention</strong> 机制。月之暗面未公开发布 Kimi Chat 的详细技术报告，其架构信息主要来自 Mooncake 论文和第三方分析。核心特征包括：</p>
+
+<ul>
+  <li><strong>架构类型</strong>：Dense Decoder-only Transformer</li>
+  <li><strong>上下文长度</strong>：初始 128K，后扩展至 200 万 token</li>
+  <li><strong>注意力机制</strong>：标准 Full Attention（完整自注意力）</li>
+  <li><strong>优化器</strong>：AdamW</li>
+  <li><strong>位置编码</strong>：RoPE（Rotary Position Embedding）</li>
+</ul>
+
+<p>在那个阶段，Dense 架构仍是主流选择。Kimi 没有追求参数规模的竞赛，而是将工程重心放在了如何使超长序列的注意力计算成为可能——这形成了 Kimi 最核心的技术壁垒。</p>
+
+<h2>Ring Attention：分布式长上下文训练</h2>
+<p>训练 128K 乃至更长上下文的模型面临一个根本性挑战：标准 Full Attention 的计算和显存复杂度均为 $O(L^2)$，随序列长度二次增长。单 GPU 无法承载超长序列的注意力计算。</p>
+
+<p>Ring Attention 是对 Bloom's Ring 通信模式在注意力计算上的创新应用。其核心思想是将长序列均匀分布在多 GPU 上，每个 GPU 持有序列的一部分，并通过<strong>环形通信</strong>模式逐块完成完整的注意力计算。</p>
+
+<p>设序列长度为 $L$，$P$ 个 GPU 参与计算，每个 GPU 持有长度为 $L/P$ 的子序列。在每个通信轮次中，GPU 计算本地 Query 与当前持有的 KV Block 之间的注意力分数，然后将 KV Block 传递给环形拓扑中的下一个 GPU，同时从上一个 GPU 接收新的 KV Block：</p>
+
+<div class="formula-block">
+$$
+\text{Attn}_{\text{GPU}_i}^{(t)} = \text{Softmax}\left( \frac{\mathbf{Q}_i \mathbf{K}_i^{(t)\top}}{\sqrt{d_h}} \right) \mathbf{V}_i^{(t)}, \quad t = 1, \dots, P
+$$
+
+$$
+\text{Attn}_{\text{GPU}_i}^{\text{final}} = \sum_{t=1}^{P} \text{Attn}_{\text{GPU}_i}^{(t)}
+$$
 </div>
 
-<h2>Kimi 模型系列概览</h2>
-<p>Kimi 模型系列经历了多个版本的演进，每一代都在能力和效率上实现了显著提升：</p>
+<p>经过 $P$ 轮通信后，每个 GPU 都获得了全序列的注意力计算结果。计算与通信通过流水线方式重叠，使得额外通信开销最小化。这种方式使得注意力计算的显存需求从 $O(L^2)$ 降低为 $O(L^2 / P)$，使超长序列的端到端训练成为可能。</p>
 
-<ul>
-  <li><strong>Kimi 初始版</strong>：以 128K 上下文窗口亮相，在长文本理解和摘要任务中表现突出</li>
-  <li><strong>Kimi 更新版</strong>：将上下文扩展至 200 万 token，引入更高效的内存管理机制</li>
-  <li><strong>Kimi K2</strong>：采用 MoE 架构的旗舰模型，在保持超长上下文能力的同时，显著提升了推理效率和模型容量</li>
-</ul>
-
-<h2>MoE 架构设计</h2>
-<p>Kimi K2 采用混合专家（MoE）架构，在保持推理效率的同时扩展模型容量。与 DeepSeek 类似，Kimi K2 也采用了稀疏激活策略，但有其独特的设计取舍。</p>
-
-<h3>专家路由机制</h3>
-<p>Kimi K2 实现了高效的路由策略，通过精细化的负载均衡设计确保各个专家网络的充分训练和利用。在门控网络设计上，Kimi 采用了可调节的 Top-K 路由策略，允许在推理时根据任务复杂度动态选择激活的专家数量，从而在质量与效率之间取得灵活平衡。</p>
-
-<pre><code># Kimi 风格的动态路由示意
-def dynamic_route(x, router, experts, min_k=1, max_k=4):
-    logits = router(x)
-    probs = softmax(logits, dim=-1)
-    # 根据置信度动态选择专家数量
-    confidence, indices = probs.sort(descending=True)
-    cum_confidence = confidence.cumsum(dim=-1)
-    k = (cum_confidence &lt; 0.9).sum(dim=-1).clamp(min_k, max_k)
-    # 激活动态数量的专家
-    output = sum(experts[indices[i]](x) * confidence[i] for i in range(k))
-    return output</code></pre>
-
-<h3>专家专业化</h3>
-<p>Kimi 的 MoE 训练过程中展现出自然的专家专业化现象——不同的专家网络在训练后自动学会处理不同类型的知识或模式。部分专家倾向于处理代码和数学推理，另一些则更擅长处理自然语言理解和生成任务。这种隐式的专业化分工使得模型能够以更少的激活参数实现更强的综合能力。</p>
-
-<h2>超长上下文技术</h2>
-<p>超长上下文是 Kimi 最核心的技术亮点。支持百万甚至千万级 token 的上下文窗口，依赖以下几项关键技术。</p>
-
-<h3>Ring Attention</h3>
-<p>Ring Attention 是支持超长上下文训练的关键分布式注意力机制。它将长序列均匀分布在多个 GPU 上，每个 GPU 持有序列的一部分，并通过环形通信模式逐块完成注意力计算。这种方式使得注意力计算的显存需求不再随序列长度线性增长，而是由参与计算的设备数量分担。</p>
-
-<pre><code># Ring Attention 简化示意
-def ring_attention(q_local, k_local, v_local, comm_group):
-    # 每个设备持有序列的一部分
+<pre><code># Ring Attention 示意
+def ring_attention(q_local, k_ring, v_ring, comm, num_rounds):
+    # q_local: 本设备持有的 Query 块
+    # k_ring, v_ring: 初始 KV 块（本设备的部分）
     attn_output = 0
-    for i in range(comm_group.size):
-        # 当前设备计算本地注意力
-        local_scores = q_local @ k_local.T
-        local_attn = softmax(local_scores) @ v_local
+    for _ in range(num_rounds):
+        local_scores = q_local @ k_ring.T
+        local_attn = softmax(local_scores) @ v_ring
         attn_output += local_attn
-        # 将 K/V 块传递给下一个设备
-        k_local = comm_group.send_recv(k_local)
-        v_local = comm_group.send_recv(v_local)
+        # 传递给下一个设备，接收上一个设备的数据
+        k_ring = comm.send_recv(k_ring)
+        v_ring = comm.send_recv(v_ring)
     return attn_output</code></pre>
 
-<h3>Paged Attention 与内存管理</h3>
-<p>Kimi 在推理阶段采用了类似 vLLM 的 Paged Attention 机制，将 KV Cache 分页管理。与传统连续内存分配相比，分页管理消除了显存碎片化问题，支持更高效的内存共享（如并行解码时的多个假设共享同一前缀的 KV Cache）。这使得部署超长上下文模型成为可能，在有限显存下支持更大的并发请求。</p>
-
-<h3>位置编码与长度外推</h3>
-<p>为了支持上下文窗口的持续扩展，Kimi 采用了 RoPE（旋转位置编码）及其改进版本。通过渐进式训练策略，模型从较短上下文起步，逐步过渡到超长上下文。在推理时，配合 NTK-aware 插值和 YaRN 等长度外推方法，模型可以较好地泛化到超出训练长度的上下文范围。</p>
-
-<h2>训练与对齐</h2>
-<h3>预训练策略</h3>
-<p>Kimi 的训练涉及超大规模的高质量语料，据公开信息，预训练数据涵盖多语言文本、代码、数学和专业知识领域。针对超长上下文任务，Kimi 采用分阶段训练策略：先在大规模通用数据上进行预训练，再通过长上下文持续训练阶段专门优化长距离依赖建模能力。</p>
-
-<h3>对齐与指令微调</h3>
-<p>在对齐方面，Kimi 采用多层级的优化方案：</p>
+<h3>分布式训练拓扑</h3>
+<p>Kimi 的整体训练采用多种并行策略的组合：</p>
 <ul>
-  <li><strong>监督微调（SFT）</strong>：使用高质量的人工标注指令数据</li>
-  <li><strong>偏好对齐</strong>：基于 RLHF 或 DPO 等偏好学习方法</li>
-  <li><strong>长上下文对齐</strong>：专门设计的超长上下文评测集用于对齐训练，确保模型在超长输入下仍能准确理解和执行指令</li>
+  <li><strong>数据并行（Data Parallelism）</strong>：多个模型副本在不同数据分片上独立计算梯度</li>
+  <li><strong>张量并行（Tensor Parallelism）</strong>：单层内的矩阵运算拆分到多 GPU</li>
+  <li><strong>序列并行（Sequence Parallelism）</strong>：结合 Ring Attention 将长序列分布到列内 GPU</li>
 </ul>
 
-<h2>推理优化</h2>
-<p>Kimi K2 作为 MoE 模型，在推理部署上进行了多方面的优化：</p>
+<p>这种多层次并行策略使得 Kimi 能够在数千 GPU 集群上高效训练超长上下文模型。</p>
+
+<h2>Mooncake：以 KVCache 为中心的解耦推理架构</h2>
+<p>Kimi 在推理侧的核心基础设施是 <strong>Mooncake</strong>（arXiv:2407.00079），一个以 KVCache 为中心的分离式 LLM 推理服务架构。Mooncake 的设计出发点是一个关键观察：长上下文推理时，<strong>KVCache 的存储成本正在成为瓶颈</strong>。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Mooncake["Mooncake 架构"]
+        PRE["Prefill Pool<br/>预填充节点池"]
+        DEC["Decode Pool<br/>解码节点池"]
+        KV["KVCache 传输总线<br/>(RDMA)"]
+        KV_S["KVCache 分层存储<br/>GPU HBM → CPU DRAM → SSD"]
+        SCH["全局调度器<br/>Moonshot Scheduler"]
+        PRE --> KV
+        KV --> DEC
+        PRE --> KV_S
+        DEC --> KV_S
+        SCH --> PRE
+        SCH --> DEC
+    end
+
+    subgraph Request["请求处理流程"]
+        REQ["用户请求"] --> PRE
+        DEC --> RESP["生成响应"]
+    end
+
+    style Mooncake fill:#1a1a2a,stroke:#60a5fa,color:#e8e4dd
+</div>
+<p class="diagram-caption">图 2：Mooncake 架构 — Prefill 与 Decode 阶段物理分离，KVCache 通过 RDMA 总线在两者间高速传输，支持 GPU-CPU-SSD 三级 Offloading</p>
+
+<h3>Prefill 与 Decode 分离</h3>
+<p>Mooncake 将推理过程划分为两个物理解耦的阶段：</p>
 <ul>
-  <li><strong>专家预加载</strong>：根据任务动态预测需要激活的专家子集，减少不必要的显存占用</li>
-  <li><strong>KV Cache 量化</strong>：对 KV Cache 进行低精度量化（如 INT8、FP8），有效降低长上下文推理的显存需求</li>
-  <li><strong>投机解码</strong>：使用轻量级 draft model 加速推理，在保持生成质量的同时提升吞吐</li>
+  <li><strong>Prefill Pool</strong>：专门处理 Prompt 编码阶段，计算密集且对延迟敏感</li>
+  <li><strong>Decode Pool</strong>：专门处理 Token 生成阶段，需要大量内存容纳 KVCache</li>
 </ul>
+<p>这种分离设计避免了传统架构中 Prefill 与 Decode 争抢同一 GPU 资源的冲突，允许对两个阶段独立进行资源标度。</p>
+
+<h3>KVCache 分层存储</h3>
+<p>Mooncake 建立了 GPU HBM → CPU DRAM → SSD 的三级 KVCache 存储体系：</p>
+<ul>
+  <li><strong>L1 - GPU HBM</strong>：容量最小（~80GB），延迟最低，存放活跃请求的 KVCache</li>
+  <li><strong>L2 - CPU DRAM</strong>：容量中等（~2TB），通过 RDMA 快速访问，存放等待恢复的 KVCache</li>
+  <li><strong>L3 - SSD</strong>：容量最大（~数十 TB），存放历史 KVCache，换入延迟较高但可批量预取</li>
+</ul>
+
+<p>全局调度器（Moonshot Scheduler）根据优先级和 KVCache 的访问模式决定数据在各层之间的迁移策略，使得长上下文推理的吞吐得到显著提升。</p>
+
+<h2>位置编码与长度外推</h2>
+<p>支持从 128K 到 200 万 token 的上下文扩展，不仅仅依赖 Ring Attention，还需要位置编码层面支持长度外推。</p>
+
+<p>Kimi 采用 <strong>RoPE（Rotary Position Embedding）</strong> 作为位置编码方案。RoPE 将位置信息通过旋转矩阵注入 Query 和 Key 的向量表示中：</p>
+
+<div class="formula-block">
+$$
+\mathbf{q}_m = \mathbf{W}_Q \mathbf{x}_m \cdot e^{im\theta}, \quad
+\mathbf{k}_n = \mathbf{W}_K \mathbf{x}_n \cdot e^{in\theta}
+$$
+
+$$
+\langle \mathbf{q}_m, \mathbf{k}_n \rangle = \text{Re} \left[ (\mathbf{W}_Q \mathbf{x}_m)^* (\mathbf{W}_K \mathbf{x}_n) e^{i(m-n)\theta} \right]
+$$
+</div>
+
+<p>RoPE 的注意力分数只依赖于相对位置 $m-n$，这一性质天然有利于长度外推。Kimi 在此基础上结合了以下技术实现从 128K 到 200 万 token 的扩展：</p>
+
+<ul>
+  <li><strong>NTK-aware 插值</strong>：通过调整 RoPE 的 base frequency，使位置编码在高频段保持分辨率、在低频段扩展范围</li>
+  <li><strong>渐进式训练</strong>：从较短上下文起步，在训练过程中逐步增加序列长度，使模型逐步适应更长的依赖关系</li>
+  <li><strong>方法结合</strong>：In Context 时通过对模型 RoPE 基频进行微调，外推至训练时未见的超长位置</li>
+</ul>
+
+<h2>长上下文检索能力</h2>
+<p>Kimi Chat 的「大海捞针」（Needle-in-a-Haystack）测试表现是当时的行业标杆。该测试在一个超长文档中嵌入一条无关事实，询问模型是否能准确找到——Kimi 在 128K 乃至 200 万 token 测试中保持了接近 100% 的检索准确率。</p>
+
+<p>这一能力不仅依赖于注意力机制本身，也得益于训练阶段的刻意设计：在长上下文持续训练阶段，模型被训练在超长输入中关注关键信息，而非平均分布注意力——训练数据中包含大量需要「从长文本中找到特定事实」的样本。</p>
 
 <h2>总结</h2>
-<p>Kimi 大模型系列在超长上下文处理能力上树立了行业标杆。其技术路线——MoE 架构 + Ring Attention + 高效内存管理——为大规模语言模型的发展提供了一条可借鉴的路径。随着上下文窗口的不断扩展和推理效率的提升，Kimi 在文档理解、代码库分析、知识密集型任务等领域的应用前景广阔。</p>
+<p>Kimi Chat 奠基期确立了月之暗面在大模型领域的核心技术路线：以<strong>超长上下文</strong>为核心竞争力，以<strong>Ring Attention</strong>解决训练长序列的显存瓶颈，以<strong>Mooncake</strong>解决长上下文推理的部署挑战。这些核心技术在后来的 K1.5、K2、K2.5 中不断演进和深化。</p>
 
-<p>值得注意的是，超长上下文能力也带来了新的挑战：如何有效利用百万级上下文中的信息、如何评估模型在超长输入下的真实表现、以及如何降低超长上下文推理的计算成本，这些都是未来值得持续关注的研究方向。</p>
+<p>Kimi Chat 时代的模型规格并未公开详细技术报告，但工程层面的基础设施积累——从分布式训练拓扑到推理服务架构——使得月之暗面能够在后续迭代中快速推进至万亿参数 MoE 和多模态智能体的前沿。</p>
 
   </div>
   <div class="p-foot">
     <div class="p-tags">
       <span class="p-tag">Kimi</span>
-      <span class="p-tag">MoE</span>
       <span class="p-tag">长上下文</span>
-      <span class="p-tag">推理优化</span>
-      <span class="p-tag">架构解析</span>
+      <span class="p-tag">Ring Attention</span>
+      <span class="p-tag">Mooncake</span>
+      <span class="p-tag">Dense</span>
     </div>
   </div>
 </article>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DeepSeek-V3.1 / V3.2 技术解析：混合推理与稀疏注意力 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.post-detail .p-body .formula-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); text-align: right; margin-top: -8px; margin-bottom: 20px; }
+
+.post-detail .p-body .bili-section { margin: 20px 0 28px; padding: 16px; background: var(--code-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md); }
+.post-detail .p-body .bili-section .bili-label { font-family: var(--font-mono); font-size: .7rem; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.post-detail .p-body .bili-section .bili-label svg { flex-shrink: 0; }
+.post-detail .p-body .bili-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.post-detail .p-body .bili-grid .bili-card { flex: 1; min-width: 200px; }
+.post-detail .p-body .bili-grid .bili-card iframe { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); border: none; }
+.post-detail .p-body .bili-grid .bili-card .bili-title { font-size: .75rem; color: var(--text2); margin-top: 4px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.post-detail .p-body .bili-grid .bili-card .bili-play { font-size: .65rem; color: var(--text3); font-family: var(--font-mono); }
+.post-detail .p-body .bili-grid .bili-card .bili-embed-wrap { position: relative; }
+.post-detail .p-body .bili-grid .bili-card .bili-dur { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.75); color: #fff; font-size: .65rem; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); }
+.post-detail .p-body .bili-grid .bili-card .bili-meta { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+
+.post-detail .p-body .version-timeline { margin: 20px 0; }
+.post-detail .p-body .version-timeline .vt-row { display: flex; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border-light); gap: 12px; }
+.post-detail .p-body .version-timeline .vt-date { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); min-width: 100px; }
+.post-detail .p-body .version-timeline .vt-ver { font-weight: 600; color: var(--copper-light); min-width: 140px; font-size: .875rem; }
+.post-detail .p-body .version-timeline .vt-desc { color: var(--text2); font-size: .8125rem; }
+.post-detail .p-body .version-timeline .vt-tag { display: inline-block; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+.post-detail .p-body .version-timeline .vt-tag.arch { background: var(--copper-light); color: #fff; }
+.post-detail .p-body .version-timeline .vt-tag.feat { background: #2563eb; color: #fff; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>DeepSeek-V3.1 / V3.2 技术解析：混合推理与稀疏注意力</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 14 日</span>
+      <span>🏷️ <a href="../posts.html?tag=DeepSeek" style="color:var(--copper-light)">DeepSeek</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>DeepSeek-V3 于 2024 年 12 月问世后，深度求索并未止步。在随后的一年中，V3 系列经历了两次重要迭代——<strong>V3.1</strong>（2025 年 8 月）和 <strong>V3.2</strong>（2025 年 12 月），分别在不同方向上拓展了 V3 的能力边界。V3.1 开启了混合推理（Think / Non-Think）的新范式，V3.2 则通过 DSA 稀疏注意力在架构层面实现了突破，并首次在工具使用中集成思考推理。</p>
+
+<p>本文将 V3.1 和 V3.2 放在一起分析，梳理 V3 系列从发布到被 V4 全面重组之间的这条演进路线。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>版本演进时间线</strong>
+</p>
+
+<div class="version-timeline">
+  <div class="vt-row">
+    <span class="vt-date">2024/12</span>
+    <span class="vt-ver">DeepSeek-V3</span>
+    <span class="vt-desc">首发版本，671B MoE + MLA，FP8 训练，14.8T tokens</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2025/03</span>
+    <span class="vt-ver">V3-0324</span>
+    <span class="vt-desc">推理能力增强，许可证切换为 MIT</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2025/08</span>
+    <span class="vt-ver">V3.1 <span class="vt-tag feat">混合推理</span></span>
+    <span class="vt-desc">持续预训练 840B tokens，128K 上下文，Think/Non-Think 模式，Agent 增强</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2025/09</span>
+    <span class="vt-ver">V3.1-Terminus</span>
+    <span class="vt-desc">语言一致性、Agent 稳定性增量改进</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2025/09</span>
+    <span class="vt-ver">V3.2-Exp <span class="vt-tag arch">DSA</span></span>
+    <span class="vt-desc">引入 DSA 稀疏注意力，API 降价 50%，实验性发布</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2025/12</span>
+    <span class="vt-ver">V3.2 <span class="vt-tag arch">Agent 推理</span></span>
+    <span class="vt-desc">DSA 正式版，Agent 训练数据合成方法论，工具中使用思考，Speciale 达到 IMO 金牌水平</span>
+  </div>
+</div>
+
+<div class="bili-section">
+  <div class="bili-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--copper-light)"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.558 3.76v7.36c-.034 1.51-.554 2.769-1.558 3.773s-2.262 1.524-3.773 1.558H5.333c-1.51-.034-2.769-.554-3.773-1.558S.036 18.858.002 17.347v-7.36c.034-1.511.554-2.77 1.558-3.773C2.564 5.21 3.823 4.69 5.333 4.653h.854L4.855 2.4a.458.458 0 01.075-.587.457.457 0 01.31-.133.469.469 0 01 .298.112l2.688 2.848h3.215l2.688-2.848c.09-.08.2-.12.32-.12a.466.466 0 01.299.133.464.464 0 01.074.587l-1.333 2.24zm-9.6 2.24a.458.458 0 00-.458.458v.853c0 .251.206.458.458.458h.854a.458.458 0 00.458-.458v-.853a.458.458 0 00-.458-.458h-.854zm9.28 1.92a.458.458 0 00-.299.112l-2.283 2.027-2.283-2.027a.469.469 0 00-.299-.112.466.466 0 00-.299.112l-2.283 2.027-2.283-2.027a.469.469 0 00-.299-.112.458.458 0 00-.299.79l2.155 1.941-2.176 2.24a.456.456 0 00.32.77c.117 0 .23-.043.32-.123l2.262-2.347 2.283 2.347c.09.08.203.123.32.123a.456.456 0 00.32-.77l-2.176-2.24 2.155-1.941a.458.458 0 00-.149-.79z"/></svg>
+    推荐视频
+  </div>
+  <div class="bili-grid">
+    <div class="bili-card">
+      <div class="bili-embed-wrap">
+        <iframe src="//player.bilibili.com/player.html?bvid=BV1VsSmBLEGg&page=1&autoplay=0" loading="lazy" allowfullscreen></iframe>
+        <span class="bili-dur">20:06</span>
+      </div>
+      <div class="bili-title">DeepSeek V3.2发布！超GPT-5，对标Gemini 3.0 Pro</div>
+      <div class="bili-meta">
+        <span class="bili-play">21.2万 播放</span>
+      </div>
+    </div>
+    <div class="bili-card">
+      <div class="bili-embed-wrap">
+        <iframe src="//player.bilibili.com/player.html?bvid=BV1iynyzXEKx&page=1&autoplay=0" loading="lazy" allowfullscreen></iframe>
+        <span class="bili-dur">11:40</span>
+      </div>
+      <div class="bili-title">10分钟看懂DeepSeek稀疏注意力（DSA）新技术</div>
+      <div class="bili-meta">
+        <span class="bili-play">1.6万 播放</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>V3.1：混合推理时代的开启</h2>
+<p>DeepSeek-V3.1 是 V3 系列的第一次重大功能升级，发布于 2025 年 8 月 21 日。与 V3 相比，V3.1 的<strong>模型架构几乎没有变化</strong>——同样的 61 层结构、同样的 MLA + DeepSeekMoE 配置、同样的 7168 维隐藏层。其核心变化集中在训练后处理和推理范式上。</p>
+
+<h3>持续预训练与上下文扩展</h3>
+<p>V3.1 在 V3 的基础上进行了 <strong>840B tokens</strong> 的持续预训练，主要目标是将上下文窗口从 128K 进一步扩展并增强模型在长文本场景下的稳定性。架构参数上，V3.1 唯一新增的配置项是 <code>scale_fmt: "ue8m0"</code>——一种 8 位纯指数浮点格式（unsigned 8-bit exponent, 0-bit mantissa），用于 FP8 量化缩放因子。相比标准的 E4/E5 FP8 格式，ue8m0 将全部 8 位用于指数，提供了约 $10^{38}$ 的超大动态范围，使其能够在混合精度训练中更精确地表示各层的量化缩放系数。</p>
+
+<h3>混合推理：Think / Non-Think 模式</h3>
+<p>V3.1 最具标志性的新特性是<strong>混合推理（Hybrid Reasoning）</strong>。一个模型权重同时支持两种推理模式：</p>
+<ul>
+  <li><strong>Non-Think</strong>：标准生成模式，不输出显式推理链，适用于简单对话和查询，对应 API 路由 <code>deepseek-chat</code></li>
+  <li><strong>Think</strong>：在 <code>&lt;think&gt;</code> 标签内输出显式的思维链推理过程，适用于数学、逻辑等复杂任务，对应 API 路由 <code>deepseek-reasoner</code></li>
+</ul>
+<p>这一设计后来成为 DeepSeek 后续所有模型（V3.2、V4）的标准能力。值得注意的是，Think/Non-Think 模式的切换完全由 API 级别控制，不依赖模型权重的差异——同一权重在不同 prompt 模板下展现出完全不同的推理行为。这种 unified checkpoint 的设计大幅降低了部署复杂度。</p>
+
+<h3>Agent 与工具调用增强</h3>
+<p>V3.1 在后训练阶段针对 Agent 场景做了专门优化，提升了工具调用和多步骤 Agent 任务的执行能力。同时，V3.1 开始支持 Anthropic API 格式和严格的函数调用模式（Beta），为开发者提供了更灵活的集成方式。</p>
+
+<p>此外，V3.1 还更新了分词器和对话模板，改进了多语言场景下的语言一致性表现。</p>
+
+<div class="mermaid">
+flowchart LR
+    subgraph V3["DeepSeek-V3 (Dec 2024)"]
+        V3_BASE["MLA + DeepSeekMoE<br/>14.8T 预训练<br/>128K 上下文"]
+    end
+
+    subgraph V31["V3.1 (Aug 2025)"]
+        direction TB
+        CPT["+840B 持续预训练<br/>ue8m0 缩放格式"]
+        THINK["混合推理模式<br/>Think / Non-Think"]
+        AGENT["Agent 能力增强<br/>工具调用优化"]
+    end
+
+    subgraph V32["V3.2 (Dec 2025)"]
+        direction TB
+        DSA["DSA 稀疏注意力<br/>Lightning Indexer"]
+        AGENT2["Agent 训练数据工厂<br/>1800+ 环境"]
+        SPECIALE["V3.2-Speciale<br/>IMO / IOI 金牌"]
+    end
+
+    V3 --> CPT --> THINK
+    CPT --> V32
+    THINK --> AGENT
+    AGENT --> AGENT2
+    AGENT2 --> SPECIALE
+    DSA --> SPECIALE
+</div>
+<p class="diagram-caption">图 1：V3 系列演进路线 — V3.1 引入混合推理和 Agent 能力增强，V3.2 在架构层面引入 DSA 稀疏注意力和大规模 Agent 训练</p>
+
+<h2>V3.2：DSA 稀疏注意力架构</h2>
+<p>2025 年 9 月 29 日，DeepSeek 发布了 <strong>V3.2-Exp</strong>（实验版），率先引入 DeepSeek Sparse Attention（DSA）稀疏注意力机制。三个月后的 12 月 1 日，<strong>V3.2 正式版</strong>发布，将 DSA 与全新的 Agent 训练方法论结合，同时推出了极致推理版本 V3.2-Speciale。这是 V3 系列在架构层面的唯一一次实质性改动。</p>
+
+<h3>DSA 的核心思想</h3>
+<p>DSA（DeepSeek Sparse Attention）是一个两阶段的稀疏注意力机制，其核心设计是：用一个轻量的 <strong>Lightning Indexer</strong> 为每个查询 Token 筛选出最相关的 K 个前缀 Token，然后主模型（MLA）仅对这 K 个 Token 执行注意力计算。这本质上是将注意力计算从序列长度的一次方复杂度进一步降低到常数 Top-K 复杂度。</p>
+
+<p>DSA 的核心公式为：</p>
+
+<div class="formula-block">
+$$
+\mathbf{I}_{t,s} = \sum_{j=1}^{H^I} w^I_{t,j} \cdot \text{ReLU}(\mathbf{q}^{I^\top}_{t,j} \mathbf{k}^I_s)
+$$
+</div>
+
+<p>其中 $H^I = 64$ 是 Indexer 的注意力头数，$w^I_{t,j}$ 是每个头的可学习重要性权重。$\mathbf{I}_{t,s}$ 表示查询 $t$ 与源 Token $s$ 之间的相关性分数。最终，仅保留分数最高的 $K = 2048$ 个位置参与主 MLA 注意力计算：</p>
+
+<div class="formula-block">
+$$
+\text{Attn}_{\text{DSA}}(\mathbf{q}_t, \mathbf{K}, \mathbf{V}) = \sum_{s \in \text{TopK}(\mathbf{I}_{t,:})} \text{Softmax}\left(\frac{\mathbf{q}_t^\top \mathbf{k}_s}{\sqrt{d_h}}\right) \mathbf{v}_s
+$$
+</div>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Stage1["阶段 1: Indexer Warmup 训练"]
+        FROZEN["主模型 MLA 参数冻结"]
+        IDX["Lightning Indexer<br/>n_heads=64, head_dim=128<br/>top-k=2048"]
+        TARGET["目标分布：跨 MLA 头聚合<br/>p_t = sum_h A_h[t,:] / ||sum_h A_h||_1"]
+        KL["KL 散度损失<br/>L^I = sum_t D_KL(p_t || Softmax(I_t))"]
+        FROZEN --> IDX
+        TARGET --> KL
+        IDX --> KL
+    end
+
+    subgraph Stage2["阶段 2: 推理时稀疏选择"]
+        QRY["查询 Token q_t"]
+        IDX2["训练好的 Indexer<br/>计算全序列 scores"]
+        TOPK["选择 Top-2048"]
+        MASK["注意力掩码<br/>选中 → 0, 未选中 → -inf"]
+        MLA_ATTN["主 MLA Attention<br/>仅对 2048 个位置计算"]
+        QRY --> IDX2 --> TOPK --> MASK --> MLA_ATTN
+    end
+
+    Stage1 -.->|"Indexer 权重<br/>加载到推理"| IDX2
+
+    style Stage1 fill:#1a1a2a,stroke:#60a5fa,color:#e8e4dd,stroke-width:2px
+    style Stage2 fill:#1a2a1a,stroke:#34d399,color:#e8e4dd,stroke-width:2px
+</div>
+<p class="diagram-caption">图 2：DSA 两阶段训练 — 第一阶段冻结主模型，仅训练 Indexer 通过 KL 散度模仿 MLA 注意力分布；第二阶段 Indexer 筛选 Top-K 位置供主模型计算</p>
+
+<h3>Indexer 的蒸馏式训练</h3>
+<p>Lightning Indexer 的训练过程类似于知识蒸馏。主模型 MLA 的注意力分布 $A_h[t,:]$ 跨所有 128 个注意力头求和并做 L1 归一化，作为 Indexer 的学习目标：</p>
+
+<div class="formula-block">
+$$
+p_{t,:} = \frac{\sum_{h=1}^{128} \mathbf{A}_h[t,:]}{\left\|\sum_{h=1}^{128} \mathbf{A}_h[t,:]\right\|_1}
+$$
+</div>
+
+<p>Indexer 的损失函数为每个位置的 KL 散度之和：</p>
+
+<div class="formula-block">
+$$
+\mathcal{L}^I = \sum_{t=1}^{T} D_{\text{KL}}(p_{t,:} \parallel \text{Softmax}(\mathbf{I}_{t,:}))
+$$
+</div>
+
+<p>训练期间主模型参数完全冻结，Indexer 使用 MLA 的 MQA（Multi-Query Attention）模式——64 个 Indexer 查询头共享一个 KV 头——以保持轻量。Indexer 的 KV Cache 使用 FP8（e4m3fn）格式存储，包含旋转矩阵（Hadamard transform）用于激活值的均衡化。训练完成后，Indexer 的权重与主模型一同部署，在推理时充当高效的 Token 选择器。</p>
+
+<pre><code># DSA 推理时 Top-K 选择（简化）
+def dsa_attention(q, k, v, indexer, top_k=2048):
+    # q, k, v: [batch, seq_len, dim]
+    # Step 1: Indexer 计算全序列分数
+    index_scores = indexer(q, k)          # [batch, seq_len, seq_len]
+    # Step 2: 选择 Top-K
+    topk_indices = index_scores.topk(top_k, dim=-1)[1]
+    # Step 3: 构建稀疏掩码
+    index_mask = full(-inf).scatter_(-1, topk_indices, 0)
+    # Step 4: 主模型 MLA 仅对选中位置计算
+    attn_scores = mla_scores(q, k) + index_mask
+    return softmax(attn_scores) @ v</code></pre>
+
+<h3>稀疏比例与序列长度</h3>
+<p>DSA 的一个关键特性是 <strong>Top-K 为常数</strong>（$K = 2048$），不随序列长度变化。这意味着有效稀疏比例随序列长度动态变化：</p>
+
+<ul>
+  <li>$8K$ 上下文：$2048 / 8192 = 25\%$ 的 Token 参与注意力计算</li>
+  <li>$32K$ 上下文：$2048 / 32768 \approx 6.25\%$</li>
+  <li>$128K$ 上下文：$2048 / 131072 \approx 1.56\%$</li>
+</ul>
+
+<p>虽然相比 V4 的 CSA/HCA 设计（仅 27% 的 FLOPs），DSA 的激进程度相对温和，但在 V3 原版 MLA 的基础上引入 DSA 已足以在长序列场景下带来可观的推理加速和 KV Cache 节省。</p>
+
+<h3>架构参数对比</h3>
+
+<p>V3.2 的完整架构参数如下表所示（与 V3.1 对比）：</p>
+
+<table class="arch-table" style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.8125rem">
+  <thead>
+    <tr>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">参数</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">V3.1</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">V3.2</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">说明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">总参数</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">671B</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">671B</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:left;background:var(--code-bg)">不变</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">n_heads (MLA)</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">128</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">128</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:left;background:var(--code-bg)">不变</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">Scale 格式</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">ue8m0</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">ue8m0</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:left;background:var(--code-bg)">继承 V3.1</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">Indexer heads</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">—</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)"><strong>64</strong></td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:left;background:var(--code-bg)">新增 DSA Indexer</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">Indexer top-K</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">—</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)"><strong>2048</strong></td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:left;background:var(--code-bg)">常数 Top-K 预算</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>V3.2 的 Agent 训练方法论</h2>
+<p>V3.2 正式版在 DSA 架构之上，引入了一套全新的<strong>大规模 Agent 训练数据合成方法论</strong>。这是 V3.2 相对于 V3.2-Exp 实验版的核心区别所在。</p>
+
+<p>该方法的规模令人印象深刻：覆盖 <strong>1,800 多个模拟环境</strong>，生成了 <strong>85,000 多条复杂指令</strong>。这些环境涵盖 Web 浏览、代码执行、API 调用、文件系统操作、数据库查询等场景。每条指令在一个或多个环境中执行，产生交织了思考链（Chain-of-Thought）和工具调用的训练轨迹。</p>
+
+<p>结果，V3.2 成为<strong>首个在工具使用中集成思考（Thinking in Tool-Use）的模型</strong>。模型可以在调用工具前进行推理规划，在执行过程中根据工具返回结果动态调整策略——这种能力在以往的工具调用模型中并不存在。V3.2 同时支持在 Think 和 Non-Think 两种模式下使用工具，为开发者提供了灵活的权衡空间。</p>
+
+<div class="mermaid">
+flowchart TB
+    subgraph DataGen["Agent 训练数据合成"]
+        ENV["1800+ 模拟环境<br/>Web · 代码 · API · 文件系统"]
+        INST["85000+ 复杂指令<br/>多步骤 Agent 任务"]
+        TRAJ["合成轨迹<br/>交织思考链 + 工具调用"]
+        ENV --> TRAJ
+        INST --> TRAJ
+    end
+
+    subgraph Train["训练"]
+        SFT["SFT on Agent 轨迹"]
+        RL["RL 优化工具使用策略"]
+        TRAJ --> SFT --> RL
+    end
+
+    subgraph Capability["V3.2 新增能力"]
+        THINK_TOOL["工具调用中集成思考<br/>规划 → 执行 → 调整"]
+        DUAL["Think & Non-Think<br/>双模式工具使用"]
+        AGENT_CAP["复杂多步 Agent 任务<br/>端到端完成"]
+    end
+
+    RL --> THINK_TOOL --> DUAL --> AGENT_CAP
+</div>
+<p class="diagram-caption">图 3：V3.2 Agent 训练流程 — 从 1800+ 环境中合成交织思考链和工具调用的训练轨迹，经 SFT + RL 训练后获得 Think-in-Tool-Use 能力</p>
+
+<h2>V3.2-Speciale：极致推理版本</h2>
+<p>与 V3.2 正式版一同发布的还有 <strong>V3.2-Speciale</strong>，一个面向极致推理场景的强化版本。Speciale 基于相同的 DSA + MLA 基座，但在推理时投入了更多计算资源（可能涉及更多的专家激活、更长的思考链和重复采样），使其在数学竞赛和编程竞赛中达到了金牌水平：</p>
+
+<ul>
+  <li><strong>IMO 2025</strong>（国际数学奥林匹克）— 金牌水平</li>
+  <li><strong>IOI 2025</strong>（国际信息学奥林匹克）— 金牌水平</li>
+  <li><strong>CMO</strong>（中国数学奥林匹克）— 金牌水平</li>
+  <li><strong>ICPC 世界总决赛</strong>— 金牌水平</li>
+</ul>
+
+<p>DeepSeek 官方宣称 V3.2 的综合性能对标 GPT-5 级别，Speciale 版本对标 Gemini 3.0 Pro。Speciale 仅通过 API 提供，不支持工具调用，是纯粹为推理评测打造的极致版本。</p>
+
+<h2>从 V3 到 V4 的桥梁</h2>
+<p>回顾 V3 系列的演进，可以看出 DeepSeek 的探索方向逐渐清晰：V3 验证了 MLA + DeepSeekMoE 基座的有效性；V3.1 在无架构变化的前提下探索了混合推理的可行性；V3.2 通过 DSA 试探了稀疏注意力在长上下文场景下的潜力。</p>
+
+<p>这些探索最终在 V4 中汇聚成一次完整的架构重构——DSA 的 Token 选择思想演化成了 V4 的 Lightning Indexer，混合推理模式被 V4 继承并扩展为三重模式（Non-Think / Think High / Think Max），V3.2 的 Agent 训练方法论也在 V4 中进一步规模化，形成了独立培养 + 统一融合的双阶段训练范式。</p>
+
+<p>V3 系列（V3 → V3.1 → V3.2）构成了 DeepSeek 从 MLA 时代到 V4 全面重构之间的关键过渡阶段——旧架构的边界在哪里，新架构需要解决什么问题，都在这个阶段中被清晰地定义了出来。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">DeepSeek</span>
+      <span class="p-tag">DSA</span>
+      <span class="p-tag">稀疏注意力</span>
+      <span class="p-tag">混合推理</span>
+      <span class="p-tag">Agent</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

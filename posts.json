@@ -12,6 +12,19 @@
     ]
   },
   {
+    "id": "deepseek-v3.1-3.2",
+    "title": "DeepSeek-V3.1 / V3.2 技术解析：混合推理与稀疏注意力",
+    "date": "2026-06-14",
+    "excerpt": "解析 DeepSeek-V3.1 和 V3.2 的核心演进：V3.1 引入 Think/Non-Think 混合推理范式与 Agent 能力增强，V3.2 通过 DSA 稀疏注意力（Lightning Indexer）实现架构突破，并首次在工具使用中集成思考推理。",
+    "tags": [
+      "主流模型",
+      "DeepSeek",
+      "DSA",
+      "稀疏注意力",
+      "Agent"
+    ]
+  },
+  {
     "id": "deepseek-r1",
     "title": "DeepSeek-R1 技术解析：强化学习激发推理能力",
     "date": "2026-06-12",
@@ -104,15 +117,54 @@
   },
   {
     "id": "kimi",
-    "title": "Kimi 大模型技术解析：超长上下文与 MoE 架构",
-    "date": "2026-06-11",
-    "excerpt": "深入分析 Kimi 大模型的核心技术方案，包括 MoE 架构设计、Ring Attention 超长上下文技术、Paged Attention 内存管理以及训练推理优化策略。",
+    "title": "Kimi Chat 技术解析：超长上下文奠基者",
+    "date": "2026-06-14",
+    "excerpt": "解析 Kimi Chat 奠基期的核心技术：Dense Transformer 架构、Full Attention 与 Ring Attention 分布式训练、Mooncake 分离式推理架构，以及 RoPE 位置编码与长度外推方案。",
+    "tags": [
+      "主流模型",
+      "Kimi",
+      "长上下文",
+      "Ring Attention",
+      "Mooncake"
+    ]
+  },
+  {
+    "id": "kimi-k1.5",
+    "title": "Kimi k1.5 技术解析：强化学习激发推理能力",
+    "date": "2026-06-14",
+    "excerpt": "解析 Kimi k1.5 的强化学习推理框架：Online Mirror Descent 策略优化、Partial Rollout 长轨迹处理、Length Penalty 推理长度控制，以及 Long2Short 推理知识蒸馏方法。",
+    "tags": [
+      "主流模型",
+      "Kimi",
+      "强化学习",
+      "推理",
+      "Long-CoT"
+    ]
+  },
+  {
+    "id": "kimi-k2",
+    "title": "Kimi K2 技术解析：万亿参数 MoE 与 MuonClip 优化器",
+    "date": "2026-06-14",
+    "excerpt": "解析 Kimi K2 的核心创新：MuonClip (Muon + QK-Clip) 优化器解决注意力爆炸问题、MLA 极致 KV 压缩、Sparsity Scaling Law 稀疏度理论指导，以及 1T 参数 MoE 的训练基础设施。",
     "tags": [
       "主流模型",
       "Kimi",
       "MoE",
-      "长上下文",
-      "推理优化"
+      "MLA",
+      "MuonClip"
+    ]
+  },
+  {
+    "id": "kimi-k2.5-k2.6",
+    "title": "Kimi K2.5 / K2.6 技术解析：多模态智能体与混合注意力架构",
+    "date": "2026-06-14",
+    "excerpt": "解析 Kimi K2.5 的多模态技术创新：MoonViT-3D 原生分辨率视觉编码、早期融合策略、Zero-Vision SFT、PARL 多智能体编排框架，以及 Kimi Linear 的 KDA+MLA 混合注意力架构。",
+    "tags": [
+      "主流模型",
+      "Kimi",
+      "多模态",
+      "Agent",
+      "Kimi Linear"
     ]
   }
 ]

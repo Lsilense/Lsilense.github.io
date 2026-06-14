@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kimi K2.5 / K2.6 技术解析：多模态智能体与混合注意力架构 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.bili-section { margin: 20px 0 28px; padding: 16px; background: var(--code-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md); }
+.bili-section .bili-label { font-family: var(--font-mono); font-size: .7rem; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.bili-section .bili-label svg { flex-shrink: 0; }
+.bili-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.bili-grid .bili-card { flex: 1; min-width: 200px; }
+.bili-grid .bili-card iframe { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); border: none; }
+.bili-grid .bili-card .bili-title { font-size: .75rem; color: var(--text2); margin-top: 4px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bili-grid .bili-card .bili-play { font-size: .65rem; color: var(--text3); font-family: var(--font-mono); }
+.bili-grid .bili-card .bili-embed-wrap { position: relative; }
+.bili-grid .bili-card .bili-dur { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.75); color: #fff; font-size: .65rem; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); }
+.bili-grid .bili-card .bili-meta { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>Kimi K2.5 / K2.6 技术解析：多模态智能体与混合注意力架构</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 14 日</span>
+      <span>🏷️ <a href="../posts.html?tag=Kimi" style="color:var(--copper-light)">Kimi</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>2026 年 2 月，月之暗面发布了 <strong>Kimi K2.5</strong>——在 K2 万亿参数 MoE 基座之上融合原生多模态能力的旗舰模型。K2.5 保留了 K2 的 MLA + MuonClip 核心技术，新增了 <strong>MoonViT-3D</strong> 视觉编码器、<strong>早期融合</strong>的联合视觉-语言预训练策略、以及 <strong>PARL</strong>（Parallel Agent Reinforcement Learning）多智能体编排框架。</p>
+
+<p>同时发布的还有 <strong>Kimi Linear</strong>（arXiv:2510.26692），一个独立的混合注意力架构创新——将线性注意力（KDA）与 MLA 按 3:1 比例混合，在长上下文场景下实现 KV Cache 减少 75%，解码吞吐提升 6 倍。Kimi Linear 代表着月之暗面在注意力机制层面的未来方向，预计在未来版本（K2.6 及以后）中与多模态基座深度融合。</p>
+
+<p>本文作为 Kimi 系列四部曲的最后一篇，聚焦 K2.5 的多模态技术创新和 Kimi Linear 的混合注意力架构探索。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>论文：</strong>Kimi K2.5: Visual Agentic Intelligence · <a href="https://arxiv.org/abs/2602.02276" target="_blank" style="color:var(--copper-light)">arXiv:2602.02276</a><br>
+Kimi Linear: An Expressive, Efficient Attention Architecture · <a href="https://arxiv.org/abs/2510.26692" target="_blank" style="color:var(--copper-light)">arXiv:2510.26692</a>
+</p>
+
+<div class="bili-section">
+  <div class="bili-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--copper-light)"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.558 3.76v7.36c-.034 1.51-.554 2.769-1.558 3.773s-2.262 1.524-3.773 1.558H5.333c-1.51-.034-2.769-.554-3.773-1.558S.036 18.858.002 17.347v-7.36c.034-1.511.554-2.77 1.558-3.773C2.564 5.21 3.823 4.69 5.333 4.653h.854L4.855 2.4a.458.458 0 01.075-.587.457.457 0 01.31-.133.469.469 0 01 .298.112l2.688 2.848h3.215l2.688-2.848c.09-.08.2-.12.32-.12a.466.466 0 01.299.133.464.464 0 01.074.587l-1.333 2.24zm-9.6 2.24a.458.458 0 00-.458.458v.853c0 .251.206.458.458.458h.854a.458.458 0 00.458-.458v-.853a.458.458 0 00-.458-.458h-.854zm9.28 1.92a.458.458 0 00-.299.112l-2.283 2.027-2.283-2.027a.469.469 0 00-.299-.112.466.466 0 00-.299.112l-2.283 2.027-2.283-2.027a.469.469 0 00-.299-.112.458.458 0 00-.299.79l2.155 1.941-2.176 2.24a.456.456 0 00.32.77c.117 0 .23-.043.32-.123l2.262-2.347 2.283 2.347c.09.08.203.123.32.123a.456.456 0 00.32-.77l-2.176-2.24 2.155-1.941a.458.458 0 00-.149-.79z"/></svg>
+    推荐视频
+  </div>
+  <div class="bili-grid">
+    <div class="bili-card">
+      <div class="bili-embed-wrap">
+        <iframe src="//player.bilibili.com/player.html?bvid=BV1MMw1zaESW&page=1&autoplay=0" loading="lazy" allowfullscreen></iframe>
+        <span class="bili-dur">8:01</span>
+      </div>
+      <div class="bili-title">深入解读 Kimi 爆火论文 — 注意力残差（Attention Residuals）</div>
+      <div class="bili-meta">
+        <span class="bili-play">26.7万 播放</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>K2.5 架构概览</h2>
+<p>K2.5 在 K2 基座之上叠加上多模态能力，而非从头训练多模态模型：</p>
+
+<ul>
+  <li><strong>语言基座</strong>：Kimi K2 MoE（1T 参数，384 专家，MLA + MuonClip）</li>
+  <li><strong>视觉编码器</strong>：MoonViT-3D（从 SigLIP-SO-400M 初始化）</li>
+  <li><strong>投影器</strong>：MLP Projector</li>
+  <li><strong>上下文</strong>：262K tokens（相比 K2 的 128K 翻倍）</li>
+</ul>
+
+<div class="mermaid">
+flowchart TB
+    subgraph K2Base["K2 语言基座"]
+        K2["MoE 1T/32B<br/>MLA + MuonClip<br/>384 Experts / Top-8"]
+    end
+
+    subgraph Vision["MoonViT-3D 视觉编码"]
+        VIT["SigLIP-SO-400M 初始化<br/>NaViT Patch Packing<br/>3D 时空体积 (4帧)"]
+        PROJ["MLP Projector"]
+        VIT --> PROJ
+    end
+
+    subgraph Fusion["早期融合 (10%:90%)"]
+        FUSE["视觉 token 注入<br/>文本 backbone 的前 10% 层"]
+        PROJ --> FUSE
+        K2 --> FUSE
+    end
+
+    subgraph PostTrain["后训练"]
+        SFT["Zero-Vision SFT<br/>仅文本 SFT 激活视觉能力"]
+        RL["联合多模态 RL<br/>PARL Agent Swarm"]
+        FUSE --> SFT --> RL
+    end
+
+    RL --> OUTPUT["Kimi K2.5<br/>原生多模态智能体"]
+</div>
+<p class="diagram-caption">图 1：K2.5 架构 — K2 MoE 基座 + MoonViT-3D 视觉编码 + 早期融合 + Zero-Vision SFT</p>
+
+<h2>MoonViT-3D：原生分辨率视觉编码</h2>
+<p>MoonViT-3D 是月之暗面自研的视觉编码器，基于 SigLIP-SO-400M 初始化，但其核心设计在几个关键点上做了重大改进：</p>
+
+<h3>NaViT Patch Packing</h3>
+<p>传统 ViT 需要将所有图像缩放到固定分辨率，这要么导致信息丢失（缩小），要么浪费 token（留白）。MoonViT-3D 采用 NaViT 风格的 Patch Packing：图像被分割为固定大小的 patches，展平后顺序拼接成 1D 序列。这使得不同分辨率和宽高比的图像可以在同一个 batch 中原生处理，无需复杂的子图像分割拼接流程。</p>
+
+<h3>3D 时空扩展</h3>
+<p>MoonViT-3D 将最多 4 个连续视频帧视为一个<strong>时空体积（Spatio-Temporal Volume）</strong>。2D patches 从这 4 帧中联合展平并打包为单个 1D 序列，使得模型能够在相同的上下文窗口内处理 <strong>4× 更长</strong> 的视频内容。这种设计的优势在于：时间信息在编码阶段就被融入视觉表征，而非依赖后期融合。</p>
+
+<h2>早期融合策略</h2>
+<p>K2.5 在视觉-语言融合方式上做了一个反直觉但效果显著的选择：<strong>早期融合（Early Fusion）</strong>。</p>
+
+<p>传统多模态模型通常将视觉编码器的输出在 LLM backbone 的浅层拼接进去（中期融合或后期融合）。K2.5 的消融实验表明：</p>
+
+<ul>
+  <li><strong>早期融合（视觉 token 在 backbone 前 10% 层注入，视觉:文本 token 比例 10%:90%）</strong> 在所有评测维度上效果最好</li>
+  <li>视觉知识 +25.8，视觉推理 +43.8，OCR +65.7，文本知识 +45.5，文本推理 +58.5，Code +24.8</li>
+  <li>视觉:文本比例越高（50%:50%），各项指标反而下降</li>
+</ul>
+
+<p>核心洞察：<strong>越早融合、视觉 token 占比越低，效果越好</strong>。这说明视觉和文本信息应该在 backbone 的早期就深度交互，而非在后期「拼接」——而且大多数 token budget 应该保留给文本推理而非视觉细节。</p>
+
+<h2>Zero-Vision SFT</h2>
+<p>K2.5 的另一个反直觉发现是 <strong>Zero-Vision SFT</strong>：仅使用高质量文本 SFT 数据（不包含任何视觉数据），就能有效激活模型的视觉推理和工具使用能力。添加人工设计的视觉副教练（visual trajectories）甚至可能损害泛化能力。</p>
+
+<p>核心假设：联合预训练阶段已经建立了足够强的视觉-文本对齐。SFT 阶段如果加入特定视觉训练数据，反而会过拟合到训练数据的视觉分布，损害跨场景泛化。</p>
+
+<h2>交叉模态迁移</h2>
+<p>K2.5 的训练中观测到一个有趣的现象：<strong>视觉 RL 训练会提升纯文本任务性能</strong>：</p>
+
+<ul>
+  <li>MMLU-Pro：84.7 → <strong>86.4</strong> (+1.7)</li>
+  <li>GPQA-Diamond：84.3 → <strong>86.4</strong> (+2.1)</li>
+  <li>LongBench v2：56.7 → <strong>58.9</strong> (+2.2)</li>
+</ul>
+
+<p>这可能是因为视觉推理训练迫使模型建立更通用的推理策略，这些策略在纯文本推理场景下同样有效。这也表明多模态训练与纯文本推理并非零和博弈，而是可以相互促进。</p>
+
+<h2>PARL：多智能体并行强化学习</h2>
+<p>K2.5 引入的 <strong>PARL（Parallel Agent Reinforcement Learning）</strong> 是 K2.5 在 Agent 能力上的核心创新：</p>
+
+<div class="mermaid">
+flowchart LR
+    subgraph Orchestrator["可训练编排器 (Orchestrator)"]
+        ORCH["动态任务分解<br/>异构子问题分配<br/>并行调度决策"]
+    end
+
+    subgraph SubAgents["冻结的子代理池"]
+        SUB1["Agent: 代码"]
+        SUB2["Agent: 搜索"]
+        SUB3["Agent: 推理"]
+        SUB4["Agent: 工具"]
+    end
+
+    subgraph Execution["并行执行"]
+        TASK1["子任务 1"]
+        TASK2["子任务 2"]
+        TASK3["子任务 3"]
+    end
+
+    TASK["复杂用户请求"] --> ORCH
+    ORCH --> SUB1 & SUB2 & SUB3
+    SUB1 --> TASK1
+    SUB2 --> TASK2
+    SUB3 --> TASK3
+    TASK1 & TASK2 & TASK3 --> MERGE["结果融合"]
+</div>
+<p class="diagram-caption">图 2：PARL 多智能体架构 — 可训练的编排器动态分解复杂任务，分派给冻结的子代理并行执行，通过 RL 学习最优调度策略</p>
+
+<p>PARL 的核心设计包含几个关键组件：</p>
+
+<ul>
+  <li><strong>解耦架构</strong>：可训练的编排器（Orchestrator） + 冻结的子代理（Sub-agents），避免多智能体联合训练的难度</li>
+  <li><strong>Critical Steps</strong>：训练目标基于 Critical Steps 而非总步数——激励编排器有效并行化子任务</li>
+  <li><strong>RL 学习的调度策略</strong>：编排器通过 RL 学习动态任务分解和并行调度决策</li>
+  <li><strong>延迟降低</strong>：在复杂多步任务上，PARL 相比单 Agent 基线实现 <strong>up to 4.5×</strong> 的延迟降低</li>
+</ul>
+
+<h2>Toggle 训练策略</h2>
+<p>K2.5 还引入了一种称为 <strong>Toggle</strong> 的训练策略，解决 RL 训练中的长度过拟合（Length-overfitting）问题——模型在固定 Token Budget 约束下无法泛化到更高计算量的场景。</p>
+
+<p>Toggle 策略的核心是在「推理时缩放阶段」和「Budget 约束阶段」之间交替切换：</p>
+
+<div class="formula-block">
+$$
+\tilde{r}(x,y) = \begin{cases}
+r(x,y) \cdot \mathbb{I}(\text{mean } r < \text{threshold}) & \text{(缩放阶段)} \\
+r(x,y) - \lambda \cdot \max(0, \text{len} - \text{budget}) & \text{(约束阶段)}
+\end{cases}
+$$
+</div>
+
+<p>通过交替应用两种不同的奖励信号，模型既学会了在充足计算资源下进行深入推理，也学会了在有限资源下高效决策。这种策略显著提升了模型在不同推理预算下的鲁棒性。</p>
+
+<h2>DEP：解耦编码器处理</h2>
+<p>为了在 K2 的 1T 参数基座上高效训练多模态模型，K2.5 设计了 <strong>Decoupled Encoder Process (DEP)</strong> 三阶段训练流程：</p>
+
+<ol>
+  <li><strong>Balanced Vision Forward</strong>：所有视觉数据前向传播，均匀分布工作负载，丢弃中间激活</li>
+  <li><strong>Backbone Training</strong>：主 Backbone 前向 + 反向传播，完美复用纯文本训练策略</li>
+  <li><strong>Vision Recomputation & Backward</strong>：重算视觉编码器前向 + 反向传播</li>
+</ol>
+
+<p>DEP 使得 K2.5 可以在不修改 K2 训练基础设施的情况下引入多模态训练，避免了大模型多模态训练中常见的显存爆炸问题。</p>
+
+<h2>Kimi Linear：未来注意力架构</h2>
+<p>除了 K2.5 模型本身，月之暗面在 2025 年 10 月还发布了一个独立的架构创新——<strong>Kimi Linear</strong>（arXiv:2510.26692），一个将线性注意力（KDA）与 MLA 混合的新型注意力架构。</p>
+
+<h3>Kimi Delta Attention (KDA)</h3>
+<p>KDA 是目前效率最高的线性注意力变体之一。其递推更新公式为：</p>
+
+<div class="formula-block">
+$$
+\mathbf{S}_t = (\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top) \cdot \text{Diag}(\alpha_t) \cdot \mathbf{S}_{t-1} + \beta_t \mathbf{k}_t \mathbf{v}_t^\top
+$$
+
+$$
+\mathbf{o}_t = \mathbf{S}_t^\top \cdot \mathbf{q}_t
+$$
+</div>
+
+<p>相比 Gated DeltaNet（GDN）的标量衰减 $\alpha_t$，KDA 采用了<strong>细粒度对角门控</strong> $\text{Diag}(\alpha_t)$，实现了 per-dimension 的衰减控制——这对于需要不同衰减率的多种信息模式（语法、语义、长程依赖）同时存在的场景至关重要。</p>
+
+<p>KDA 还使用了 DPLR（Diagonal-Plus-Low-Rank）分解的高效实现。标准 DPLR 需要 4 个矩阵乘法，KDA 通过将 a, b 绑定到 k，减少到仅 2 个矩阵乘法，效率提升约 100%。</p>
+
+<h3>3:1 混合架构</h3>
+<p>Kimi Linear 的核心设计是一个<strong>混合架构</strong>：</p>
+<ul>
+  <li><strong>每 4 层一个周期</strong>：前 3 层使用 KDA 线性注意力，第 4 层使用 MLA</li>
+  <li><strong>NoPE</strong>：MLA 层不使用位置编码（NoPE），位置信息完全由 KDA 层承担</li>
+  <li>在 3B 激活 / 48B 总参数的配置上进行了验证</li>
+</ul>
+
+<div class="mermaid">
+flowchart LR
+    subgraph Block1["Block 1"]
+        KDA1["KDA Layer"]
+    end
+    subgraph Block2["Block 2"]
+        KDA2["KDA Layer"]
+    end
+    subgraph Block3["Block 3"]
+        KDA3["KDA Layer"]
+    end
+    subgraph Block4["Block 4"]
+        MLA_NOPE["MLA Layer<br/>(No Position Encoding)"]
+    end
+    Block1 --> Block2 --> Block3 --> Block4
+    style Block1 fill:#1a1a2a,stroke:#60a5fa
+    style Block2 fill:#1a1a2a,stroke:#60a5fa
+    style Block3 fill:#1a1a2a,stroke:#60a5fa
+    style Block4 fill:#1a2a1a,stroke:#34d399
+</div>
+<p class="diagram-caption">图 3：Kimi Linear 3:1 混合模式 — 3 个 KDA 线性注意力层后跟 1 个 MLA 层，MLA 层不设位置编码</p>
+
+<p>性能数据：</p>
+<ul>
+  <li>KV Cache 减少 <strong>up to 75%</strong></li>
+  <li>在 1M 上下文时解码吞吐 <strong>6×</strong> 快于全注意力基线</li>
+  <li>在多种长上下文评测中与完整注意力持平或在大部分任务上更优</li>
+</ul>
+
+<h2>K2.6 展望</h2>
+<p>虽然 Kimi K2.6 尚未有公开的技术报告，但从 K2.5 的技术报告中可以合理推测其演进方向：</p>
+<ul>
+  <li>Kimi Linear 的 KDA + MLA 混合架构可能与 K2 MoE 基座深度融合</li>
+  <li>PARL 多智能体框架的进一步扩展</li>
+  <li>更长的上下文窗口（可能超越 262K）</li>
+  <li>更强的 Agent 原生能力</li>
+</ul>
+
+<p>目前月之暗面的三篇论文（K2 + K2.5 + Kimi Linear）代表了三个不同的技术方向，K2.6 很可能是在这三个方向的交汇点上的产物。</p>
+
+<h2>Kimi 系列演进总结</h2>
+
+<table class="arch-table" style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.8125rem">
+  <thead>
+    <tr>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">维度</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">Kimi Chat</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">k1.5</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">K2</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">K2.5</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">架构</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">Dense</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">Dense</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MoE</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MoE + ViT</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">注意力</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">Full Attn</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">Full Attn</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MLA</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MLA + Kimi Linear</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">优化器</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">AdamW</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">AdamW</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MuonClip</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MuonClip</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">上下文</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">128K-200万</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">128K</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">128K</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">262K</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">核心能力</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">长文本</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">推理+RL</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">Agent</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">多模态+Agent</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>总结</h2>
+<p>K2.5 是 Kimi 系列从纯文本 Agent 走向多模态智能体的关键一步。MoonViT-3D 的原生分辨率编码、早期融合策略、Zero-Vision SFT 和 PARL 多智能体编排框架，共同构成了 K2.5 的技术创新体系。</p>
+
+<p>与此同时，Kimi Linear 展示了月之暗面在注意力机制层面的前瞻性探索——KDA + MLA 的混合架构在长上下文效率上表现出了巨大潜力，预计将在未来版本中与多模态基座融合，形成「高效注意力 + 多模态智能体」的完整技术栈。</p>
+
+<p>从 Kimi Chat 的 128K 上下文到 K2.5 的 262K 原生多模态智能体，月之暗面用两年多时间完成了从产品验证到万亿参数 MoE 再到多模态智能体的完整技术积累。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">Kimi</span>
+      <span class="p-tag">多模态</span>
+      <span class="p-tag">Kimi Linear</span>
+      <span class="p-tag">Agent</span>
+      <span class="p-tag">PARL</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
