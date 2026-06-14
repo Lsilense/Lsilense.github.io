@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GLM 系列技术解析：从自回归填空到追赶 GPT-4 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.p-body .version-timeline { margin: 20px 0; }
+.p-body .version-timeline .vt-row { display: flex; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border-light); gap: 12px; }
+.p-body .version-timeline .vt-date { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); min-width: 100px; }
+.p-body .version-timeline .vt-ver { font-weight: 600; color: var(--copper-light); min-width: 140px; font-size: .875rem; }
+.p-body .version-timeline .vt-desc { color: var(--text2); font-size: .8125rem; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>GLM 系列技术解析：从自回归填空到追赶 GPT-4</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 14 日</span>
+      <span>🏷️ <a href="../posts.html?tag=GLM" style="color:var(--copper-light)">GLM</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>GLM（General Language Model）是智谱 AI（Zhipu AI）与清华大学联合开发的大语言模型系列。从 2021 年的 GLM 论文到 2024 年的 GLM-4，GLM 系列经历了从学术研究到工业级产品的完整演进：GLM 提出了统一 NLU 和 NLG 的自回归填空目标；GLM-130B 以 DeepNorm 解决了千亿参数训练的稳定性难题；ChatGLM 系列将模型推向开源社区；GLM-4 则在综合能力上追赶上了 GPT-4 的水平。</p>
+
+<p>本文覆盖 GLM 系列的前四个发展阶段（GLM → GLM-130B → ChatGLM → GLM-4），系统解析每一代的核心技术和演进逻辑。</p>
+
+<div class="version-timeline">
+  <div class="vt-row">
+    <span class="vt-date">2021</span>
+    <span class="vt-ver">GLM</span>
+    <span class="vt-desc">自回归填空（ABI）+ 2D 位置编码，统一 NLU/NLG</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2022/08</span>
+    <span class="vt-ver">GLM-130B</span>
+    <span class="vt-desc">DeepNorm 稳定性突破，千亿参数 INT4 量化</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2023/03</span>
+    <span class="vt-ver">ChatGLM-6B</span>
+    <span class="vt-desc">开源对话模型，消费级 GPU 可部署，P-Tuning v2</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2023/06</span>
+    <span class="vt-ver">ChatGLM2-6B</span>
+    <span class="vt-desc">FlashAttention + MQA，32K 上下文</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2023/10</span>
+    <span class="vt-ver">ChatGLM3-6B</span>
+    <span class="vt-desc">GQA，Function Call，Agent 任务</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2024/01</span>
+    <span class="vt-ver">GLM-4</span>
+    <span class="vt-desc">128K 上下文，All Tools，综合追赶 GPT-4</span>
+  </div>
+  <div class="vt-row">
+    <span class="vt-date">2024/06</span>
+    <span class="vt-ver">GLM-4-9B</span>
+    <span class="vt-desc">开源 9B 模型，1M 上下文变体</span>
+  </div>
+</div>
+
+<div class="mermaid">
+flowchart LR
+    subgraph Era["GLM 系列演进路线"]
+        GLM["GLM<br/>ABI + 2D PE"] --> GLM130B["GLM-130B<br/>DeepNorm + INT4"]
+        GLM130B --> CHATGLM["ChatGLM-6B/2/3<br/>开源对话优化"]
+        CHATGLM --> GLM4["GLM-4<br/>128K + All Tools"]
+        GLM4 --> GLM45["GLM-4.5 → GLM-5<br/>MoE + Agent"]
+    end
+    style Era stroke:#d9772b,stroke-width:2px
+</div>
+<p class="diagram-caption">图 1：GLM 系列演进路线——从学术研究到产品级 MoE 智能体</p>
+
+<h2>GLM：自回归填空与统一预训练框架</h2>
+<p>GLM（arXiv:2103.10360）的核心贡献在于提出了一个全新的预训练框架——<strong>Autoregressive Blank Infilling (ABI)</strong>，将 NLU、条件生成和无条件生成统一到单一目标下。</p>
+
+<h3>Autoregressive Blank Infilling (ABI)</h3>
+<p>ABI 的思想结合了自编码和自回归的目标：从输入文本中随机 Blank 出连续的 Token 片段（类似 BERT 的 Mask），然后<strong>自回归地重构这些片段</strong>（类似 GPT 的生成）。与 T5 的 Span Corruption 不同，ABI 引入了 <strong>Span Shuffling</strong>——对短文的预测顺序进行随机排列，使模型必须捕获片段之间的依赖关系。</p>
+
+<p>给定输入 $x = [x_1, ..., x_n]$，随机选择多个跨度 $\{s_1, ..., s_m\}$，每个跨度 $s_j$ 包含 $l_j$ 个连续 token。输入 $x_{\text{corrupt}}$ 将这些跨度替换为 $[MASK]$ 标记，输出 $y = [s_1^{\text{shuffled}}, ..., s_m^{\text{shuffled}}]$ 是被打乱顺序的原始跨度。</p>
+
+<div class="formula-block">
+$$
+\max_{\theta} \log P(y | x_{\text{corrupt}}) = \sum_{j=1}^{m} \sum_{t=1}^{l_j} \log P_{\theta}(y_{j,t} | x_{\text{corrupt}}, y_{<j}, y_{j,<t})
+$$
+</div>
+
+<p>其中 $y_{<j}$ 表示已预测的跨度（按打乱后的顺序），$y_{j,<t}$ 表示当前跨度中已生成的 token。NLU 任务被转化为 cloze 问答形式，通过自回归生成来完成——这种设计统一了 NLU 和 NLG 的训练目标。</p>
+
+<h3>2D Position Encoding</h3>
+<p>ABI 的输入 Token 需要编码两种位置信息：<strong>在原文本中的位置</strong>和<strong>在跨度内的位置</strong>。GLM 引入了 2D 位置编码：</p>
+
+<ul>
+  <li><strong>Position 1</strong>：在损坏文本 $\mathbf{x}_{\text{corrupt}}$ 中的位置（对 $[MASK]$ Token 为被遮蔽的位置）</li>
+  <li><strong>Position 2</strong>：跨度内位置（Part A 为 0，Part B 为 1, 2, ..., $l_j$）</li>
+</ul>
+
+<p>两种位置 ID 分别通过可学习的嵌入表投影后与输入 token 嵌入相加。在注意力计算中，Part A（损坏文本）的 Token 之间使用<strong>双向注意力</strong>，Part B（跨度内的 Token）使用<strong>因果注意力</strong>——这种混合注意力模式使得 GLM 既能像 BERT 一样捕获双向上下文，也能像 GPT 一样进行生成。</p>
+
+<pre><code># GLM 自回归填空示意
+def glm_forward(input_ids, span_masks):
+    # input_ids: Part A + [MASK] tokens
+    # span_masks: 标识每个 token 属于哪个跨度
+    # 2D 位置编码
+    pos1 = get_position_in_text(input_ids)
+    pos2 = get_intra_span_position(span_masks)
+    embeddings = token_embed(input_ids) + pos1_embed(pos1) + pos2_embed(pos2)
+    # 混合注意力：Part A 双向，Part B 因果
+    attention_mask = build_glm_mask(span_masks)  # 双向+因果混合
+    hidden = transformer(embeddings, attention_mask)
+    # 仅对 Part B（空白跨度）计算损失
+    loss = autoregressive_loss(hidden, span_masks)
+    return loss</code></pre>
+
+<h2>GLM-130B：千亿参数的工程突破</h2>
+<p>GLM-130B（arXiv:2210.02414，ICLR 2023）将 GLM 架构扩展到 130B 参数，是当时少数成功训练千亿参数级模型并稳定运行的案例之一。</p>
+
+<h3>模型规格</h3>
+<ul>
+  <li><strong>参数</strong>：130B，70 层，96 注意力头，隐藏维度 12,288</li>
+  <li><strong>训练数据</strong>：400B tokens（双语，中文 + 英文）</li>
+  <li><strong>优化器</strong>：AdamW，Apex O2 混合精度（FP16 前反向 + FP32 优化器状态）</li>
+  <li><strong>激活函数</strong>：GLU + GeLU</li>
+  <li><strong>位置编码</strong>：RoPE</li>
+</ul>
+
+<h3>DeepNorm：解决千亿参数稳定性</h3>
+<p>GLM-130B 的核心工程创新是 <strong>DeepNorm</strong>。在千亿参数规模下，标准 LayerNorm 方案（Pre-LN、Post-LN、Sandwich-LN）全部失败——训练在数万步后崩溃。DeepNorm 的公式为：</p>
+
+<div class="formula-block">
+$$
+\text{DeepNorm}(x) = \text{LayerNorm}(\alpha \cdot x + \text{Network}(x)), \quad \alpha = \sqrt{2N}
+$$
+</div>
+
+<p>其中 $N$ 是 Transformer 层数（GLM-130B 中 N=70，$\alpha \approx 11.8$）。相比于 Post-LN 的残差缩放 $\alpha=1$，DeepNorm 大幅增强了残差连接的主导地位，使信号在 70 层深网络中仍能稳定传播。配合 Xavier Normal 初始化时对 FFN 和投影矩阵的 $(2N)^{-1/2}$ 缩放，GLM-130B 在 400B tokens 的训练中实现了全程零 Loss Spike。</p>
+
+<h3>Embedding Gradient Shrink</h3>
+<p>GLM-130B 观测到训练早期 embedding 层的梯度比其他层大了数个数量级。为此引入了 <strong>Embedding Gradient Shrink (EGS)</strong>，对 embedding 层梯度进行缩放：</p>
+
+<div class="formula-block">
+$$
+\nabla_{\text{emb}} \leftarrow \nabla_{\text{emb}} \cdot \alpha_{\text{egs}}
+$$
+</div>
+
+<p>EGS 使得 embedding 层的更新步长与其他层保持一致，防止了 NLP 大模型训练中一个常见但不易调试的不稳定因素。</p>
+
+<h3>INT4 量化</h3>
+<p>GLM-130B 是首个实现 INT4 量化后性能几乎无损失的大模型。INT4 量化后的 GLM-130B 仅需约 <strong>70GB</strong> 显存（INT8 约 140GB，FP16 约 260GB），可以在 4 张 RTX 3090 Ti（24GB×4）或 8 张 RTX 2080 Ti（11GB×8）上部署。这一成果得益于 DeepNorm 训练出的权重分布更加规整，对低精度量化的容忍度更高。</p>
+
+<h3>性能 vs GPT-3 davinci</h3>
+<ul>
+  <li>LAMBADA：<strong>80.2%</strong> vs GPT-3 76.2%</li>
+  <li>MMLU：<strong>44.8%</strong> vs GPT-3 43.9%</li>
+  <li>BoolQ：<strong>82.2%</strong> vs GPT-3 60.5%（尤其突出）</li>
+</ul>
+
+<h2>ChatGLM 系列：开源对话模型</h2>
+<p>2023 年，智谱 AI 发布了多个面向对话场景的开源模型，使 GLM 技术惠及社区。</p>
+
+<h3>ChatGLM-6B</h3>
+<p>2023 年 3 月发布，6.2B 参数，基于 GLM 架构，在约 1T tokens 中英文语料上训练。核心特征：</p>
+<ul>
+  <li><strong>INT4 量化</strong>：最低 6GB 显存可部署（INT8 10GB，FP16 13GB）</li>
+  <li><strong>P-Tuning v2</strong>：参数高效微调，仅需训练 0.1% 的参数（PrefixEncoder），7GB 显存 @INT4</li>
+  <li><strong>后训练</strong>：SFT + Feedback Bootstrap + RLHF</li>
+</ul>
+
+<h3>ChatGLM2-6B</h3>
+<p>2023 年 6 月发布，架构改进：</p>
+<ul>
+  <li><strong>FlashAttention</strong>：支持 32K 上下文</li>
+  <li><strong>Multi-Query Attention (MQA)</strong>：推理速度提升 42%</li>
+  <li>MMLU <strong>45.2%</strong>，GSM8K <strong>25.9%</strong></li>
+</ul>
+
+<h3>ChatGLM3-6B</h3>
+<p>2023 年 10 月发布，质的飞跃：</p>
+<ul>
+  <li><strong>GQA (Group Query Attention)</strong>：替代 MQA，在效率和质量间取得更好平衡</li>
+  <li><strong>Function Call</strong>：原生支持工具调用和 Agent 任务</li>
+  <li>MMLU <strong>61.4%</strong>，GSM8K <strong>72.3%</strong>，HumanEval <strong>58.5%</strong></li>
+  <li>C-Eval <strong>69.0%</strong>，CMMLU <strong>67.5%</strong></li>
+</ul>
+
+<p>从 ChatGLM1 到 ChatGLM3 的演进可以看到一个清晰的趋势：<strong>注意力机制逐渐向 GQA 收敛</strong>（MHA → MQA → GQA），<strong>上下文长度持续扩展</strong>（2K → 32K），<strong>Agent 能力原生集成</strong>（Function Call）。</p>
+
+<h2>GLM-4：追赶 GPT-4</h2>
+<p>2024 年 1 月发布的 GLM-4 是智谱 AI 的旗舰级产品，在综合能力上全面追赶 GPT-4。</p>
+
+<h3>架构变化</h3>
+<ul>
+  <li><strong>GQA</strong>：继承 ChatGLM3 的注意力设计，以 FFN 维度提升补偿 KV Cache 减少</li>
+  <li><strong>RMSNorm + SwiGLU</strong>：替换 LayerNorm + ReLU/GeLU</li>
+  <li><strong>RoPE 2D 形式</strong>：适配 GLM 的 2D 位置编码方案</li>
+  <li><strong>无 Bias 项</strong>：去除除 QKV 外的偏置项（提升长度外推能力）</li>
+  <li><strong>上下文</strong>：128K tokens（GLM-4-9B 后续支持 1M 变体）</li>
+</ul>
+
+<h3>GLM-4-9B 开源版</h3>
+<p>2024 年 6 月开源，9B 参数，在约 10T tokens 上训练，词表 150K（BPE，融合中文 token 与 cl100k_base）：</p>
+<ul>
+  <li>MMLU <strong>74.7%</strong>，GSM8K <strong>84.0%</strong>，HumanEval <strong>70.1%</strong></li>
+  <li>超越同期的 Llama-3-8B</li>
+  <li>另有 GLM-4-9B-Chat-1M 变体，支持百万级上下文</li>
+</ul>
+
+<h3>GLM-4 All Tools</h3>
+<p>GLM-4 的一个标志性能力是 <strong>All Tools</strong>——模型自主理解用户意图，规划复杂指令，并调用多种工具（Web 浏览器、Python 解释器、文生图模型）。这一能力使 GLM-4 在开放式任务上的表现接近 GPT-4 All Tools。</p>
+
+<h3>Benchmark 对比 GPT-4</h3>
+<ul>
+  <li>MMLU：<strong>83.3%</strong> vs GPT-4 (0613) 86.4%</li>
+  <li>AlignBench（中文）：超越 GPT-4，匹配 GPT-4-Turbo</li>
+  <li>LongBench-Chat (128K)：<strong>87.3</strong> vs GPT-4-Turbo 87.2，Claude 3 Opus 87.7</li>
+</ul>
+
+<p>GLM-4 在中文场景上已经与 GPT-4 持平甚至局部超越，在英文和代码上仍有一定差距，但差距显著缩小。</p>
+
+<h2>总结</h2>
+<p>从 GLM 到 GLM-4 的演进展现了智谱 AI 清晰的技术路线：GLM 完成了架构创新（ABI + 2D PE）；GLM-130B 解决了千亿参数训练工程难题；ChatGLM 系列完成了技术普惠和社区验证；GLM-4 实现了产品级追赶。这四个阶段为后续 MoE 时代的 GLM-4.5 和 GLM-5 奠定了完整的架构基础和训练经验。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">GLM</span>
+      <span class="p-tag">ABI</span>
+      <span class="p-tag">DeepNorm</span>
+      <span class="p-tag">ChatGLM</span>
+      <span class="p-tag">架构解析</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

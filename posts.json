@@ -166,5 +166,31 @@
       "Agent",
       "Kimi Linear"
     ]
+  },
+  {
+    "id": "glm",
+    "title": "GLM 系列技术解析：从自回归填空到追赶 GPT-4",
+    "date": "2026-06-14",
+    "excerpt": "系统解析 GLM 系列前四个阶段的技术演进：GLM 的自回归填空（ABI）+ 2D 位置编码架构创新、GLM-130B 的 DeepNorm 千亿参数训练稳定性突破、ChatGLM 开源对话模型演化，以及 GLM-4 追赶 GPT-4 的综合能力。",
+    "tags": [
+      "主流模型",
+      "GLM",
+      "ABI",
+      "DeepNorm",
+      "ChatGLM"
+    ]
+  },
+  {
+    "id": "glm-5",
+    "title": "GLM-5 / GLM-5.1 技术解析：MoE 架构与智能体工程",
+    "date": "2026-06-14",
+    "excerpt": "解析 GLM 系列从 GLM-4.5 到 GLM-5.1 的全面技术升级：MoE 稀疏架构转型、DSA 稀疏注意力、Slime 异步 RL 训练框架，以及 AutoGLM 智能体和 GLM-5.1 的长程 Agent 编码能力。",
+    "tags": [
+      "主流模型",
+      "GLM",
+      "MoE",
+      "DSA",
+      "智能体"
+    ]
   }
 ]

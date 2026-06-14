@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GLM-5 / GLM-5.1 技术解析：MoE 架构与智能体工程 · Lsilense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script>(function(){var s=localStorage.getItem('blog-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',s)})()</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });
+  function initMermaid() {
+    var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'neutral';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: theme,
+      themeVariables: theme === 'dark' ? {
+        primaryColor: '#1f222a',
+        primaryTextColor: '#e8e4dd',
+        primaryBorderColor: '#252831',
+        lineColor: '#d9772b',
+        secondaryColor: '#111318',
+        tertiaryColor: '#0a0c10',
+        fontFamily: '"DM Sans",sans-serif'
+      } : {
+        primaryColor: '#f0ede8',
+        primaryTextColor: '#1a1612',
+        primaryBorderColor: '#e2ddd6',
+        lineColor: '#c96a1f',
+        secondaryColor: '#fcfaf7',
+        tertiaryColor: '#f5f2ed',
+        fontFamily: '"DM Sans",sans-serif'
+      }
+    });
+  }
+  initMermaid();
+  var observer = new MutationObserver(function() { initMermaid(); });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+<style>
+.mermaid { margin: 24px 0; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.p-body .diagram-caption { text-align: center; font-size: .75rem; color: var(--text3); margin-top: -16px; margin-bottom: 24px; font-family: var(--font-mono); }
+.post-detail .p-body pre { overflow-x: auto; }
+.post-detail .p-body .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.post-detail .p-body .katex { font-size: 1.05em; }
+.post-detail .p-body .formula-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin: 16px 0; overflow-x: auto; }
+.p-body .paper-figure { text-align: center; margin: 20px 0 28px; }
+.p-body .paper-figure img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.p-body .paper-figure .paper-caption { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.p-body .paper-figure .paper-caption .badge { display: inline-block; background: var(--copper-light); color: #fff; font-size: .625rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; letter-spacing: .3px; }
+</style>
+</head>
+<body>
+
+<nav id="nav" role="navigation">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo"><span class="nav-logo-mark">L</span>Lsilense</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html">首页</a></li><li><a href="../research.html">核心方向</a></li>
+        <li><a href="../projects.html">项目</a></li><li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+        <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-btn" aria-label="切换主题"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 8a6.5 6.5 0 016.4-6.5 6.5 6.5 0 106.1 10.3A7.02 7.02 0 011.5 8z"/></svg></button>
+      <button class="mobile-btn" id="mobile-btn" aria-label="菜单"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zM1.75 12h12.5a.75.75 0 010 1.5H1.75a.75.75 0 010-1.5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<article class="post-detail">
+  <a href="../posts.html" class="back-link">← 返回文章列表</a>
+  <div class="p-heading">
+    <h1>GLM-5 / GLM-5.1 技术解析：MoE 架构与智能体工程</h1>
+    <div class="p-meta">
+      <span>📅 2026 年 6 月 14 日</span>
+      <span>🏷️ <a href="../posts.html?tag=GLM" style="color:var(--copper-light)">GLM</a></span>
+    </div>
+  </div>
+  <div class="p-body">
+
+<h2>引言</h2>
+<p>GLM 系列在 GLM-4 之后进入了全面重构阶段。2025 年 7 月，智谱 AI 发布了首个 MoE 模型 <strong>GLM-4.5</strong>（355B 总参数 / 32B 激活），标志着 GLM 从 Dense 架构到稀疏架构的根本性转型。2026 年 2 月，<strong>GLM-5</strong> 将参数大幅扩展至 744B 总参 / 40B 激活，引入了 DeepSeek Sparse Attention、异步 RL 基础设施和长程智能体能力。随后的 <strong>GLM-5.1</strong> 在同架构基础上进一步强化了编码能力，在 SWE-Bench Pro、NL2Repo 等评测中达到开源模型顶尖水平。</p>
+
+<p>本文系统解析 GLM-4.5 → GLM-5 → GLM-5.1 的演进，以及同期发布的 AutoGLM 和 GLM-Z1 在智能体工程和推理增强方向的探索。</p>
+
+<p style="font-family:var(--font-mono);font-size:.8125rem;color:var(--copper-light);padding:10px 16px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:20px">
+📄 <strong>论文：</strong>GLM-4.5 · arXiv:2508.06471<br>
+GLM-5 / GLM-5.1 · arXiv:2602.15763<br>
+AutoGLM · arXiv:2411.00820
+</p>
+
+<div class="version-timeline" style="margin:20px 0">
+  <div class="vt-row" style="display:flex;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border-light);gap:12px">
+    <span class="vt-date" style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);min-width:100px">2024/10</span>
+    <span class="vt-ver" style="font-weight:600;color:var(--copper-light);min-width:140px;font-size:.875rem">AutoGLM</span>
+    <span class="vt-desc" style="color:var(--text2);font-size:.8125rem">手机 / Web GUI 智能体，视觉-语言基座 + RL</span>
+  </div>
+  <div class="vt-row" style="display:flex;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border-light);gap:12px">
+    <span class="vt-date" style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);min-width:100px">2025/04</span>
+    <span class="vt-ver" style="font-weight:600;color:var(--copper-light);min-width:140px;font-size:.875rem">GLM-Z1</span>
+    <span class="vt-desc" style="color:var(--text2);font-size:.8125rem">9B/32B 推理模型，RL 驱动的推理增强</span>
+  </div>
+  <div class="vt-row" style="display:flex;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border-light);gap:12px">
+    <span class="vt-date" style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);min-width:100px">2025/07</span>
+    <span class="vt-ver" style="font-weight:600;color:var(--copper-light);min-width:140px;font-size:.875rem">GLM-4.5</span>
+    <span class="vt-desc" style="color:var(--text2);font-size:.8125rem">MoE 355B/32B，混合推理，23T tokens，MIT 开源</span>
+  </div>
+  <div class="vt-row" style="display:flex;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border-light);gap:12px">
+    <span class="vt-date" style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);min-width:100px">2026/02</span>
+    <span class="vt-ver" style="font-weight:600;color:var(--copper-light);min-width:140px;font-size:.875rem">GLM-5</span>
+    <span class="vt-desc" style="color:var(--text2);font-size:.8125rem">MoE 744B/40B，DSA 注意力，28.5T tokens</span>
+  </div>
+  <div class="vt-row" style="display:flex;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border-light);gap:12px">
+    <span class="vt-date" style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);min-width:100px">2026/03+</span>
+    <span class="vt-ver" style="font-weight:600;color:var(--copper-light);min-width:140px;font-size:.875rem">GLM-5.1</span>
+    <span class="vt-desc" style="color:var(--text2);font-size:.8125rem">同架构，编码能力大幅增强，长程智能体</span>
+  </div>
+</div>
+
+<h2>GLM-4.5：首次 MoE 尝试</h2>
+<p>GLM-4.5（arXiv:2508.06471）是 GLM 系列的 MoE 初代产品，验证了从 Dense 到 MoE 的迁移路线。</p>
+
+<h3>规格</h3>
+<ul>
+  <li><strong>GLM-4.5</strong>：355B 总参数，32B 激活，MoE 架构</li>
+  <li><strong>GLM-4.5-Air</strong>：106B 总参数，12B 激活</li>
+  <li><strong>上下文</strong>：128K tokens</li>
+  <li><strong>预训练</strong>：23T tokens</li>
+  <li><strong>混合推理</strong>：Think / Non-Think 双模式，通过 <code>thinking.type</code> 参数切换</li>
+  <li><strong>MTP + EAGLE 投机解码</strong>：Multi-Token Prediction 层加速推理</li>
+  <li><strong>开源</strong>：MIT 协议，6 个变体（Base / Chat / FP8）</li>
+</ul>
+
+<h3>后训练：专家迭代 + RL</h3>
+<p>GLM-4.5 在预训练后采用了多阶段后训练管线：</p>
+<ul>
+  <li><strong>专家模型迭代（Expert Model Iteration）</strong>：不同领域分别训练独立的领域专家，再通过蒸馏融合回主模型</li>
+  <li><strong>RL 对齐</strong>：偏好优化 + 推理场景强化学习</li>
+</ul>
+
+<h3>评测表现</h3>
+<ul>
+  <li>综合排名：开源模型第 3 位（总分 63.2）</li>
+  <li>TAU-Bench：<strong>70.1%</strong></li>
+  <li>AIME 2024：<strong>91.0%</strong></li>
+  <li>SWE-bench Verified：<strong>64.2%</strong></li>
+</ul>
+
+<h2>GLM-5：744B 参数 MoE + DSA</h2>
+<p>GLM-5（arXiv:2602.15763）将参数规模推至 744B 总参 / 40B 激活，是 GLM 系列迄今最大的模型。</p>
+
+<h3>架构创新</h3>
+
+<p><strong>MoE 配置：</strong></p>
+<ul>
+  <li>总参数：<strong>744B</strong></li>
+  <li>激活参数：<strong>40B</strong></li>
+  <li>预训练 tokens：<strong>28.5T</strong></li>
+</ul>
+
+<p><strong>DeepSeek Sparse Attention (DSA)：</strong></p>
+<p>GLM-5 引入了 DSA 稀疏注意力机制——一个轻量级 Lightning Indexer 为每个查询 token 筛选最相关的 Top-K 个前缀 token（K=2048），主注意力仅对这 K 个位置进行计算。在 128K 上下文下，有效注意力计算量降至标准注意力的约 1.6%。GLM-5 也是继 DeepSeek V3.2 / V4 之后，第二个采用 DSA 注意力机制的主流模型。</p>
+
+<p><strong>Multi-Token Prediction + EAGLE 投机解码：</strong></p>
+<p>继承自 GLM-4.5 的多 token 预测训练目标，配合 EAGLE 风格的投机解码加速推理。</p>
+
+<p><strong>异步 RL 基础设施（Slime）：</strong></p>
+<p>GLM-5 的训练管线中引入了一项重要的工程创新——<strong>Slime</strong> 异步 RL 框架。传统 RL 训练中，模型的 Rollout 和参数更新必须串行化：Rollout 完成后才能更新模型参数，更新后再进行下一轮 Rollout。Slime 框架打破了这一约束，允许模型参数在被更新时正在进行中的 Rollout 轨迹继续使用旧参数完成，再将梯度异步回传给更新后的参数。这一设计显著提升了 Agent 训练的数据吞吐。</p>
+
+<h3>智能体能力</h3>
+<p>GLM-5 在智能体评测上表现突出：</p>
+<ul>
+  <li><strong>Vending Bench 2</strong>：开源模型 #1，最终余额 $4,432</li>
+  <li><strong>CC-Bench-V2</strong>：前端 / 后端 / 长程任务上均表现强劲</li>
+</ul>
+
+<p>这些成绩源于 GLM-5 在训练中纳入了大量 Agent 轨迹数据——从网页浏览、代码编辑、API 调用到多步工具使用。模型学会了在长时间跨度内维持目标一致性、在失败时重新规划策略以及高效管理上下文窗口。</p>
+
+<pre><code># Slime 异步 RL 简化示意
+def slime_training_loop(model, rollout_env, replay_buffer):
+    while True:
+        # 异步请求 Rollout
+        future_trajectories = rollouts_async(model, rollout_env, num_workers=64)
+        # 同时更新模型参数（上一批 Rollout 的梯度）
+        if replay_buffer.ready():
+            gradients = compute_gradients(model, replay_buffer.sample())
+            model.apply_gradients(gradients)
+        # 收集完成的 Rollout
+        trajectories = future_trajectories.collect()
+        replay_buffer.add(trajectories)</code></pre>
+
+<h2>AutoGLM：智能体工程探索</h2>
+<p>AutoGLM（arXiv:2411.00820）是智谱 AI 在智能体工程方向的独立探索，发布于 2024 年 10 月，早于 GLM-5。</p>
+
+<h3>架构设计</h3>
+<ul>
+  <li><strong>基座</strong>：GLM-4.1V-9B-Thinking（视觉-语言模型）</li>
+  <li><strong>参数量</strong>：AutoGLM-Phone-9B，BF16 ~10.3GB</li>
+  <li><strong>控制方式</strong>：通过 ADB（Android）/ WebDriverAgent（iOS）控制设备</li>
+  <li><strong>规划-执行分离</strong>：通过中间接口（Intermediate Interface）将高层规划与底层执行解耦</li>
+</ul>
+
+<h3>自我进化在线课程 RL</h3>
+<p>AutoGLM 的核心训练策略是 <strong>Self-evolving Online Curriculum Reinforcement Learning</strong>：</p>
+<ul>
+  <li>从简单任务（打开 App、点击按钮）开始训练</li>
+  <li>随模型能力提升，自动增加任务难度（多步操作、跨 App 协作）</li>
+  <li>在真实环境中持续 Rollout，通过成功/失败信号更新策略</li>
+</ul>
+
+<h3>评测</h3>
+<ul>
+  <li>Web：<strong>55.2%</strong> VAB-WebArena-Lite，<strong>96.2%</strong> OpenTable</li>
+  <li>Android：<strong>36.2%</strong> AndroidLab，<strong>89.7%</strong> 中文 App 任务</li>
+  <li>开源：MIT 协议</li>
+</ul>
+
+<h2>GLM-5.1：编码能力跃升</h2>
+<p>GLM-5.1 在 GLM-5 的 744B/40B 架构基础上不做改动，但通过训练策略和数据质量的优化，在编码能力上实现了大幅跃升：</p>
+
+<ul>
+  <li><strong>SWE-Bench Pro</strong>：开源模型 #1</li>
+  <li><strong>NL2Repo</strong>：从需求到完整仓库的代码生成，开源模型 #1</li>
+  <li><strong>Terminal-Bench 2.0</strong>：终端环境下的代码操作，开源模型 #1</li>
+  <li><strong>长程任务</strong>：保持数百轮对话和数千次工具调用下的有效性</li>
+</ul>
+
+<p>GLM-5.1 的成功说明了一个重要趋势：在架构不变的前提下，<strong>训练策略和数据质量仍是拉开模型差距的关键因素</strong>。GLM-5.1 在编码相关数据分布上的针对性优化，使其在与同架构模型（包括 GLM-5 自身）的比较中展现出了显著优势。</p>
+
+<h2>GLM-Z1：推理增强</h2>
+<p>GLM-Z1 系列是智谱 AI 在推理增强方向的探索，对标 DeepSeek-R1 的思路：</p>
+
+<ul>
+  <li><strong>GLM-Z1-9B-0414</strong>：9B 推理模型</li>
+  <li><strong>GLM-Z1-32B-0414</strong>：32B 推理模型</li>
+  <li><strong>GLM-Z1-Rumination-32B-0414</strong>：带扩展沉思能力的 32B 推理模型</li>
+  <li>所有版本支持 32K 原生上下文（通过 YaRN 可扩展至 128K）</li>
+</ul>
+
+<p>GLM-Z1 系列在 GLM-4-32B 基座上通过 RL 训练增强了推理链生成能力，类似于 DeepSeek-R1 的 GRPO 训练路径，但采用了智谱自研的 RL 框架。GLM-Z1-Rumination 版本增加了「沉思」机制——模型在给出最终答案前会生成更长的内部推理链，在 AIME 等复杂推理任务上表现更佳。</p>
+
+<h2>GLM 智能体技术栈总结</h2>
+
+<table class="arch-table" style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.8125rem">
+  <thead>
+    <tr>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">维度</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">GLM-4.5</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">GLM-5</th>
+      <th style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--surface);font-weight:600;color:var(--copper-light)">GLM-5.1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">总参数</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">355B</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">744B</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">744B</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">激活参数</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">32B</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">40B</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">40B</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">注意力</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">标准 GQA</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">DSA</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">DSA</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">训练 Tokens</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">23T</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">28.5T</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">28.5T</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">推理加速</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MTP + EAGLE</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MTP + EAGLE</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MTP + EAGLE</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">RL 框架</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">标准 RL</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">Slime 异步 RL</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">Slime 异步 RL</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">核心优势</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">MoE 初代验证</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg)">长程 Agent</td>
+      <td style="border:1px solid var(--border);padding:8px 12px;text-align:center;background:var(--code-bg);color:var(--copper-light);font-weight:600">编码 #1</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="mermaid">
+flowchart TB
+    subgraph GLM45["GLM-4.5 (Jul 2025)"]
+        M1["MoE 355B/32B<br/>GQA + Hybrid Reasoning<br/>23T tokens"]
+    end
+
+    subgraph GLM5["GLM-5 (Feb 2026)"]
+        M2["MoE 744B/40B<br/>DSA + MTP<br/>28.5T tokens"]
+    end
+
+    subgraph GLM51["GLM-5.1 (2026)"]
+        M3["Same 744B/40B<br/>Enhanced Coding Data<br/>Long-horizon Agent"]
+    end
+
+    subgraph Ecosystem["生态组件"]
+        AUTOGLM["AutoGLM<br/>GUI Agent"]
+        Z1["GLM-Z1<br/>Reasoning Enhanced"]
+        SLIME["Slime<br/>Async RL"]
+    end
+
+    M1 --> M2 --> M3
+    AUTOGLM -.->|Agent 经验反哺| M2
+    Z1 -.->|推理方法论| M3
+    SLIME -.-> M2
+    SLIME -.-> M3
+
+    style Ecosystem fill:#1a1a2a,stroke:#60a5fa,color:#e8e4dd
+</div>
+<p class="diagram-caption">图 1：GLM MoE 时代技术栈 — GLM-4.5 验证 MoE 路线，GLM-5 引入 DSA + Slime，GLM-5.1 专注编码跃升，AutoGLM 和 GLM-Z1 互补探索 Agent 和推理增强</p>
+
+<h2>总结</h2>
+<p>从 GLM-4.5 到 GLM-5.1，智谱 AI 在不到一年的时间内完成了从 Dense 到 MoE 的全面转型，并在三个关键方向持续深耕：</p>
+<ul>
+  <li><strong>MoE 规模化</strong>：355B → 744B 总参数，32B → 40B 激活参数的持续扩展</li>
+  <li><strong>注意力进化</strong>：GQA → DSA 稀疏注意力，长上下文效率大幅提升</li>
+  <li><strong>智能体工程</strong>：Slime 异步 RL 训练框架 + AutoGLM GUI 智能体 + GLM-5.1 长程 Agent 能力</li>
+</ul>
+
+<p>GLM-5.1 在同架构下通过训练数据优化实现编码能力大幅跃升，也说明了大模型竞赛中数据工程仍是关键的差异化因素。可以预见，GLM 系列下一阶段的核心方向将是 MoE + DSA 基座的进一步扩展，以及多模态智能体与长程 Agent 能力的深度融合。</p>
+
+  </div>
+  <div class="p-foot">
+    <div class="p-tags">
+      <span class="p-tag">GLM</span>
+      <span class="p-tag">MoE</span>
+      <span class="p-tag">DSA</span>
+      <span class="p-tag">智能体</span>
+      <span class="p-tag">Agent</span>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-left"><span class="ft-brand">Lsilense Blog</span><p>&copy; 2026 · 基于 GitHub Pages 构建</p></div>
+    <ul class="ft-links">
+      <li><a href="../research.html">研究</a></li><li><a href="../projects.html">项目</a></li>
+      <li><a href="../tech-stack.html">技术栈</a></li><li><a href="../posts.html">文章</a></li>
+      <li><a href="https://github.com/Lsilense" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
